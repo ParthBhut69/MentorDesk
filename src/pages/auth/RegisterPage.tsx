@@ -101,7 +101,7 @@ export function RegisterPage() {
                     <div className="text-center text-sm text-slate-500">
                         Already have an account?{' '}
                         <Link to="/login" className="font-medium text-primary-600 hover:underline">
-                            Sign in
+                            Login
                         </Link>
                     </div>
                 </CardFooter>

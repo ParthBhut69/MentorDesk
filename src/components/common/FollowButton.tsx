@@ -35,7 +35,9 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
             const response = await api.get(`/followers/check/${entityId}?type=${entityType}`);
             setIsFollowing(response.data.following);
         } catch (error) {
+            // Silently fail - user might not be logged in or endpoint might not exist
             console.error('Error checking follow status:', error);
+            setIsFollowing(false);
         } finally {
             setChecking(false);
         }

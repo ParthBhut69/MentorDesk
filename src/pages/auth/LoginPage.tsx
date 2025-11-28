@@ -45,7 +45,7 @@ export function LoginPage() {
                 <CardHeader className="space-y-1 text-center">
                     <h3 className="text-2xl font-semibold tracking-tight">Welcome back</h3>
                     <p className="text-sm text-slate-500">
-                        Enter your email to sign in to your account
+                        Enter your email to login to your account
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -82,7 +82,7 @@ export function LoginPage() {
                             />
                         </div>
                         <Button className="w-full" size="lg" type="submit">
-                            Sign in
+                            Login
                         </Button>
                     </form>
                 </CardContent>
