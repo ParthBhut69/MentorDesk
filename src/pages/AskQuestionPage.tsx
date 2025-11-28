@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { X, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
+import { API_URL } from '../config/api';
 
 export function AskQuestionPage() {
     const [title, setTitle] = useState('');
@@ -69,14 +70,13 @@ export function AskQuestionPage() {
         const token = localStorage.getItem('token');
         if (!token) {
             setError('You must be logged in to post a question');
-            navigate('/login');
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            const response = await fetch('http://localhost:3000/api/questions', {
+            const response = await fetch(`${API_URL}/api/questions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -85,8 +85,9 @@ export function AskQuestionPage() {
                 body: JSON.stringify({
                     title: title.trim(),
                     description: description.trim(),
-                    image: image
-                }),
+                    tags,
+                    image_url: image
+                })
             });
 
             const data = await response.json();

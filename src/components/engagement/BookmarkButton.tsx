@@ -6,6 +6,7 @@ interface BookmarkButtonProps {
     questionId: number;
     initialBookmarked?: boolean;
 }
+import { API_URL } from '../../config/api';
 
 export function BookmarkButton({ questionId, initialBookmarked = false }: BookmarkButtonProps) {
     const [bookmarked, setBookmarked] = useState(initialBookmarked);
@@ -23,7 +24,7 @@ export function BookmarkButton({ questionId, initialBookmarked = false }: Bookma
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3000/api/engagement/bookmarks', {
+            const response = await fetch(`${API_URL}/api/engagement/bookmarks`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

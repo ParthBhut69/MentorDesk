@@ -6,6 +6,8 @@ import { QuestionCard } from '../components/feed/QuestionCard';
 import { Button } from '../components/ui/button';
 import { PenSquare } from 'lucide-react';
 
+import { API_URL } from '../config/api';
+
 export function HomePage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,7 +22,8 @@ export function HomePage() {
         try {
             const filter = searchParams.get('filter');
             const tag = searchParams.get('tag');
-            let url = 'http://localhost:3000/api/questions';
+
+            let url = `${API_URL}/api/questions`;
 
             const params = new URLSearchParams();
             if (filter) params.append('filter', filter);

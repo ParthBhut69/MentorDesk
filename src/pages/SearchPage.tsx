@@ -5,6 +5,8 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { CheckCircle, User } from 'lucide-react';
 
+import { API_URL } from '../config/api';
+
 interface SearchResults {
     questions: any[];
     answers: any[];
@@ -26,7 +28,7 @@ export function SearchPage() {
     const fetchResults = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:3000/api/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`);
             if (response.ok) {
                 const data = await response.json();
                 setResults(data);

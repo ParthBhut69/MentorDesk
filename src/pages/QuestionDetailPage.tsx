@@ -9,6 +9,7 @@ import { VoteButton } from '../components/engagement/VoteButton';
 import { ShareButton } from '../components/engagement/ShareButton';
 import { BookmarkButton } from '../components/engagement/BookmarkButton';
 import { CheckCircle2 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export function QuestionDetailPage() {
     const { id } = useParams();
@@ -24,9 +25,11 @@ export function QuestionDetailPage() {
         }
     }, [id]);
 
+
+
     const fetchQuestion = async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/questions/${id}`);
+            const response = await fetch(`${API_URL}/api/questions/${id}`);
             const data = await response.json();
             setQuestion(data);
         } catch (error) {
@@ -38,7 +41,7 @@ export function QuestionDetailPage() {
 
     const fetchAnswers = async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/questions/${id}/answers`);
+            const response = await fetch(`${API_URL}/api/questions/${id}/answers`);
             const data = await response.json();
             setAnswers(data);
         } catch (error) {
@@ -51,13 +54,13 @@ export function QuestionDetailPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/questions/${id}/answers`, {
+            const response = await fetch(`${API_URL}/api/questions/${id}/answers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ answer_text: answerText })
+                body: JSON.stringify({ content: answerText })
             });
 
             if (response.ok) {

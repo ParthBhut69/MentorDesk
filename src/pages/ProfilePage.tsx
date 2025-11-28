@@ -10,6 +10,7 @@ import { MapPin, Calendar, CheckCircle2, MessageSquare, Edit2, Save, X, Camera, 
 import { EditQuestionModal } from '../components/modals/EditQuestionModal';
 import { FollowButton } from '../components/common/FollowButton';
 import { ExpertBadge } from '../components/common/ExpertBadge';
+import { API_URL } from '../config/api';
 
 interface ProfileData {
     name: string;
@@ -56,22 +57,20 @@ interface Question {
 }
 
 export function ProfilePage() {
+    const { id } = useParams();
+    const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
     const [user, setUser] = useState<ProfileData | null>(null);
     const [editedUser, setEditedUser] = useState<ProfileData | null>(null);
     const [error, setError] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [activeTab, setActiveTab] = useState<'all' | 'questions' | 'answers'>('all');
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const { id } = useParams();
-    const navigate = useNavigate();
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        // If no ID is provided, redirect to login or handle as current user
-        // But since the route is /profile/:id, id should always be present
         if (id) {
             fetchProfileData(parseInt(id));
             fetchUserActivity(parseInt(id));
@@ -79,9 +78,25 @@ export function ProfilePage() {
         }
     }, [id]);
 
+    const fetchProfileData = async (userId: number) => {
+        try {
+            const response = await fetch(`${API_URL}/api/users/${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setUser(data);
+                setEditedUser(data);
+            } else {
+                setError('Failed to load profile');
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            setError('Error loading profile');
+        }
+    };
+
     const fetchUserActivity = async (userId: number) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/activity/user/${userId}`);
+            const response = await fetch(`${API_URL}/api/activity/user/${userId}`);
             if (response.ok) {
                 const data = await response.json();
                 setActivities(data);
@@ -93,7 +108,7 @@ export function ProfilePage() {
 
     const fetchUserQuestions = async (userId: number) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/questions/user/${userId}`);
+            const response = await fetch(`${API_URL}/api/questions/user/${userId}`);
             if (response.ok) {
                 const data = await response.json();
                 setQuestions(data);
@@ -103,46 +118,76 @@ export function ProfilePage() {
         }
     };
 
-    const handleEditQuestion = (question: Question) => {
-        setEditingQuestion(question);
-        setIsEditModalOpen(true);
+    const isCurrentUser = () => {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        return currentUser.id === parseInt(id || '0');
     };
 
-    const handleSaveQuestion = async (questionId: number, data: { title: string; description: string; image: string | null }) => {
+    const handleEdit = () => {
+        setIsEditing(true);
+        setEditedUser(user);
+    };
+
+    const handleCancel = () => {
+        setIsEditing(false);
+        setEditedUser(user);
+        setError('');
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !editedUser) return;
+
+        // In a real app, we would upload the file to a server/storage
+        // For now, we'll just create a local URL
+        const imageUrl = URL.createObjectURL(file);
+        setEditedUser({ ...editedUser, avatarUrl: imageUrl });
+    };
+
+    const handleSave = async () => {
+        if (!editedUser) return;
+        setIsSaving(true);
+        setError('');
+
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/questions/${questionId}`, {
+            const response = await fetch(`${API_URL}/api/users/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(editedUser)
             });
 
             if (response.ok) {
-                // Refresh questions
-                if (id) {
-                    fetchUserQuestions(parseInt(id));
-                }
-                setIsEditModalOpen(false);
+                const updatedUser = await response.json();
+                setUser(updatedUser);
+                setEditedUser(updatedUser);
+                setIsEditing(false);
+
+                // Update localStorage
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const mergedUser = { ...currentUser, ...updatedUser };
+                localStorage.setItem('user', JSON.stringify(mergedUser));
             } else {
-                throw new Error('Failed to update question');
+                const errorData = await response.json();
+                setError(errorData.message || 'Failed to update profile');
             }
-        } catch (error) {
-            console.error('Error updating question:', error);
-            throw error;
+        } catch (err) {
+            console.error('Error saving profile:', err);
+            setError('Failed to update profile: ' + (err as Error).message);
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleDeleteQuestion = async (questionId: number) => {
-        if (!confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to delete this question?')) return;
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/questions/${questionId}`, {
+            const response = await fetch(`${API_URL}/api/questions/${questionId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -164,149 +209,36 @@ export function ProfilePage() {
         }
     };
 
-    const fetchProfileData = async (userId: number) => {
-        try {
-            const response = await fetch(`http://localhost:3000/api/rewards/profile/${userId}`);
-            if (response.ok) {
-                const profileData = await response.json();
-
-                const fullProfile: ProfileData = {
-                    name: profileData.name || '',
-                    email: profileData.email || '',
-                    bio: profileData.bio || '',
-                    location: profileData.location || '',
-                    website: profileData.website || '',
-                    linkedin: profileData.linkedin || '',
-                    twitter: profileData.twitter || '',
-                    github: profileData.github || '',
-                    avatarUrl: profileData.avatarUrl || '',
-                    points: profileData.points || 0,
-                    rank: profileData.rank || 'Beginner',
-                    stats: profileData.stats || { answers: 0, questions: 0, accepted_answers: 0 },
-                    follower_count: profileData.follower_count || 0,
-                    following_count: profileData.following_count || 0,
-                    is_verified_expert: profileData.is_verified_expert || false,
-                    expert_role: profileData.expert_role || null
-                };
-
-                setUser(fullProfile);
-                setEditedUser(fullProfile);
-            }
-        } catch (error) {
-            console.error('Error fetching profile:', error);
-            // Fallback to localStorage data
-            const parsedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            const fullProfile: ProfileData = {
-                name: parsedUser.name || '',
-                email: parsedUser.email || '',
-                bio: parsedUser.bio || '',
-                location: parsedUser.location || '',
-                website: parsedUser.website || '',
-                linkedin: parsedUser.linkedin || '',
-                twitter: parsedUser.twitter || '',
-                github: parsedUser.github || '',
-                avatarUrl: parsedUser.avatarUrl || '',
-                points: 0,
-                rank: 'Beginner'
-            };
-            setUser(fullProfile);
-            setEditedUser(fullProfile);
-        }
+    const handleEditQuestion = (question: Question) => {
+        setEditingQuestion(question);
+        setIsEditModalOpen(true);
     };
 
-    const isCurrentUser = () => {
-        const userData = localStorage.getItem('user');
-        if (!userData) return false;
-        const parsedUser = JSON.parse(userData);
-        return parsedUser.id.toString() === id;
-    };
-
-    const handleEdit = () => {
-        if (isCurrentUser()) {
-            setIsEditing(true);
-        }
-    };
-
-    const handleCancel = () => {
-        setEditedUser(user);
-        setIsEditing(false);
-        setError('');
-    };
-
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && editedUser) {
-            // Check file type
-            if (!file.type.startsWith('image/')) {
-                setError('Please select an image file');
-                return;
-            }
-
-            // Check file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                setError('Image size should be less than 5MB');
-                return;
-            }
-
-            // Create a local URL for the image
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setEditedUser({
-                    ...editedUser,
-                    avatarUrl: base64String
-                });
-                setError('');
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleSave = async () => {
-        if (!editedUser?.name?.trim()) {
-            setError('Name is required');
-            return;
-        }
-
-        setError('');
-        setIsSaving(true);
-
+    const handleSaveQuestion = async (questionId: number, data: { title: string; description: string; image: string | null }) => {
         try {
             const token = localStorage.getItem('token');
-            console.log('Saving profile...', editedUser);
-
-            const response = await fetch('http://localhost:3000/api/users/profile', {
+            const response = await fetch(`${API_URL}/api/questions/${questionId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(editedUser)
+                body: JSON.stringify({
+                    title: data.title,
+                    description: data.description,
+                    image_url: data.image
+                })
             });
 
-            console.log('Response status:', response.status);
-
             if (response.ok) {
-                const updatedUser = await response.json();
-                console.log('Profile updated successfully:', updatedUser);
-
-                // Update localStorage with new data
-                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-                const mergedUser = { ...currentUser, ...updatedUser };
-                localStorage.setItem('user', JSON.stringify(mergedUser));
-
-                setUser(editedUser);
-                setIsEditing(false);
-            } else {
-                const errorData = await response.json();
-                console.error('Failed to update profile:', errorData);
-                setError(errorData.message || 'Failed to update profile');
+                setIsEditModalOpen(false);
+                setEditingQuestion(null);
+                if (id) {
+                    fetchUserQuestions(parseInt(id));
+                }
             }
-        } catch (err) {
-            console.error('Error saving profile:', err);
-            setError('Failed to update profile: ' + (err as Error).message);
-        } finally {
-            setIsSaving(false);
+        } catch (error) {
+            console.error('Error updating question:', error);
         }
     };
 

@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Search, Eye, Trash2, UserX, UserCheck } from 'lucide-react';
+import { API_URL } from '../../config/api';
 
 interface User {
     id: number;
@@ -48,10 +49,12 @@ export function UserManagement() {
         }
     }, [searchTerm, users]);
 
+
+
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/admin/users', {
+            const response = await fetch(`${API_URL}/api/admin/users`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -69,34 +72,14 @@ export function UserManagement() {
         }
     };
 
-    const changeRank = async (userId: number, newRank: string) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ rank: newRank })
-            });
-
-            if (response.ok) {
-                fetchUsers();
-            }
-        } catch (error) {
-            console.error('Error updating rank:', error);
-        }
-    };
-
     const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
+            const response = await fetch(`${API_URL}/api/admin/users/${userId}/status`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ is_active: !currentStatus })
             });
@@ -105,18 +88,16 @@ export function UserManagement() {
                 fetchUsers();
             }
         } catch (error) {
-            console.error('Error updating user:', error);
+            console.error('Error updating user status:', error);
         }
     };
 
     const deleteUser = async (userId: number) => {
-        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
+            const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -128,6 +109,26 @@ export function UserManagement() {
             }
         } catch (error) {
             console.error('Error deleting user:', error);
+        }
+    };
+
+    const changeRank = async (userId: number, newRank: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/admin/users/${userId}/rank`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ rank: newRank })
+            });
+
+            if (response.ok) {
+                fetchUsers();
+            }
+        } catch (error) {
+            console.error('Error updating user rank:', error);
         }
     };
 

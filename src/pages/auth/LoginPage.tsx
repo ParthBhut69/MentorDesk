@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader } from '../../components/ui/card';
 import { AuthLayout } from '../../layouts/AuthLayout';
+import { API_URL } from '../../config/api';
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ export function LoginPage() {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:3000/api/auth/login', {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

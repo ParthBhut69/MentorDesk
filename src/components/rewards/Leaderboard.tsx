@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { RankBadge } from './RankBadge';
 import { Trophy } from 'lucide-react';
+import { API_URL } from '../../config/api';
 
 interface LeaderboardUser {
     id: number;
@@ -22,7 +23,7 @@ export function Leaderboard() {
 
     const fetchLeaderboard = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/rewards/leaderboard?limit=10');
+            const response = await fetch(`${API_URL}/api/gamification/leaderboard`);
             if (response.ok) {
                 const data = await response.json();
                 setUsers(data);
@@ -56,9 +57,9 @@ export function Leaderboard() {
                         >
                             <div className="flex items-center gap-3">
                                 <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                        index === 1 ? 'bg-slate-100 text-slate-700' :
-                                            index === 2 ? 'bg-orange-100 text-orange-700' :
-                                                'bg-slate-50 text-slate-600'
+                                    index === 1 ? 'bg-slate-100 text-slate-700' :
+                                        index === 2 ? 'bg-orange-100 text-orange-700' :
+                                            'bg-slate-50 text-slate-600'
                                     }`}>
                                     #{index + 1}
                                 </div>

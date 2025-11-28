@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ArrowLeft, Mail, Calendar, FileQuestion, MessageSquare } from 'lucide-react';
+import { API_URL } from '../../config/api';
 
 interface UserDetails {
     id: number;
@@ -49,10 +50,12 @@ export function UserDetails() {
         fetchUserDetails();
     }, [id, navigate]);
 
+
+
     const fetchUserDetails = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${id}`, {
+            const response = await fetch(`${API_URL}/api/admin/users/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -153,84 +156,26 @@ export function UserDetails() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {user.is_verified_expert ? (
+                            {user.is_verified_expert && (
                                 <div>
                                     <div className="flex items-center gap-2 mb-4">
                                         <Badge variant="default">✓ Verified {user.expert_role} Expert</Badge>
-                                    </div>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={async () => {
-                                            if (confirm('Remove expert status?')) {
+                                        <Button
+                                            onClick={async () => {
                                                 try {
                                                     const token = localStorage.getItem('token');
-                                                    const response = await fetch(`http://localhost:3000/api/admin/users/${id}/expert-status`, {
-                                                        method: 'DELETE',
-                                                        headers: { 'Authorization': `Bearer ${token}` }
+                                                    const response = await fetch(`${API_URL}/api/admin/users/${id}/verify-expert`, {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Authorization': `Bearer ${token}`
+                                                        }
                                                     });
+
                                                     if (response.ok) {
                                                         fetchUserDetails();
                                                     }
                                                 } catch (error) {
                                                     console.error('Error:', error);
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        Remove Expert Status
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div>
-                                    <p className="text-sm text-slate-600 mb-3">Verify this user as an expert:</p>
-                                    <div className="flex gap-2">
-                                        <select
-                                            id="expertRole"
-                                            className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
-                                            defaultValue=""
-                                        >
-                                            <option value="" disabled>Select expert role...</option>
-                                            <option value="CA">Chartered Accountant (CA)</option>
-                                            <option value="Lawyer">Lawyer / Legal Expert</option>
-                                            <option value="HR">HR Expert</option>
-                                            <option value="Marketing">Marketing Expert</option>
-                                            <option value="Finance">Finance Expert</option>
-                                            <option value="Tax">Tax Consultant</option>
-                                            <option value="Business">Business Consultant</option>
-                                            <option value="IT">IT / Technology Expert</option>
-                                            <option value="Sales">Sales Expert</option>
-                                            <option value="Operations">Operations Expert</option>
-                                            <option value="Compliance">Compliance Expert</option>
-                                            <option value="Strategy">Strategy Consultant</option>
-                                        </select>
-                                        <Button
-                                            onClick={async () => {
-                                                const select = document.getElementById('expertRole') as HTMLSelectElement;
-                                                const role = select.value;
-
-                                                if (!role) {
-                                                    alert('Please select an expert role');
-                                                    return;
-                                                }
-
-                                                if (confirm(`Verify as ${role} expert?`)) {
-                                                    try {
-                                                        const token = localStorage.getItem('token');
-                                                        const response = await fetch(`http://localhost:3000/api/admin/users/${id}/verify-expert`, {
-                                                            method: 'POST',
-                                                            headers: {
-                                                                'Content-Type': 'application/json',
-                                                                'Authorization': `Bearer ${token}`
-                                                            },
-                                                            body: JSON.stringify({ expert_role: role })
-                                                        });
-                                                        if (response.ok) {
-                                                            fetchUserDetails();
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('Error:', error);
-                                                    }
                                                 }
                                             }}
                                         >

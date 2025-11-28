@@ -3,6 +3,7 @@ import { MainLayout } from '../layouts/MainLayout';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Bell, Check, MessageSquare, Star, Award } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 interface Notification {
     id: number;
@@ -24,14 +25,11 @@ export function NotificationsPage() {
     const fetchNotifications = async () => {
         try {
             const token = localStorage.getItem('token');
-            if (!token) return;
-
-            const response = await fetch('http://localhost:3000/api/notifications', {
+            const response = await fetch(`${API_URL}/api/notifications`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data);
@@ -43,37 +41,33 @@ export function NotificationsPage() {
         }
     };
 
-    const markAsRead = async (id: number) => {
-        try {
-            const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3000/api/notifications/${id}/read`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            setNotifications(notifications.map(n =>
-                n.id === id ? { ...n, is_read: true } : n
-            ));
-        } catch (error) {
-            console.error('Error marking notification as read:', error);
-        }
-    };
-
     const markAllAsRead = async () => {
         try {
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:3000/api/notifications/read-all', {
+            await fetch(`${API_URL}/api/notifications/read-all`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-
-            setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+            fetchNotifications();
         } catch (error) {
             console.error('Error marking all as read:', error);
+        }
+    };
+
+    const markAsRead = async (id: number) => {
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`${API_URL}/api/notifications/${id}/read`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error marking as read:', error);
         }
     };
 
@@ -81,7 +75,7 @@ export function NotificationsPage() {
         switch (type) {
             case 'reply':
                 return <MessageSquare className="h-5 w-5 text-blue-500" />;
-            case 'vote':
+            case 'upvote':
                 return <Star className="h-5 w-5 text-yellow-500" />;
             case 'reward':
                 return <Award className="h-5 w-5 text-purple-500" />;

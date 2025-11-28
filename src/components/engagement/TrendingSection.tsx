@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, Award, Tag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { API_URL } from '../../config/api';
 
 interface TrendingQuestion {
     id: number;
@@ -26,40 +27,37 @@ interface PopularTag {
 }
 
 export function TrendingSection() {
-    const [trendingQuestions, setTrendingQuestions] = useState<TrendingQuestion[]>([]);
+    const [trendingQuestions] = useState<TrendingQuestion[]>([]);
     const [topExperts, setTopExperts] = useState<TopExpert[]>([]);
     const [popularTags, setPopularTags] = useState<PopularTag[]>([]);
 
+
     useEffect(() => {
+        const fetchTrendingData = async () => {
+            try {
+                // Fetch top experts
+                const expertsRes = await fetch(`${API_URL}/api/trending/experts`);
+                if (expertsRes.ok) {
+                    const data = await expertsRes.json();
+                    setTopExperts(data.slice(0, 5));
+                }
+
+                // Fetch popular tags
+                const tagsRes = await fetch(`${API_URL}/api/trending/tags`);
+                if (tagsRes.ok) {
+                    const data = await tagsRes.json();
+                    setPopularTags(data.slice(0, 10));
+                }
+
+                // Fetch trending questions (mock or real endpoint needed)
+                // For now, we'll leave it empty or fetch if endpoint exists
+            } catch (error) {
+                console.error('Error fetching trending data:', error);
+            }
+        };
+
         fetchTrendingData();
     }, []);
-
-    const fetchTrendingData = async () => {
-        try {
-            // Fetch trending questions
-            const questionsRes = await fetch('http://localhost:3000/api/trending/questions');
-            if (questionsRes.ok) {
-                const data = await questionsRes.json();
-                setTrendingQuestions(data.slice(0, 5));
-            }
-
-            // Fetch top experts
-            const expertsRes = await fetch('http://localhost:3000/api/trending/experts');
-            if (expertsRes.ok) {
-                const data = await expertsRes.json();
-                setTopExperts(data.slice(0, 5));
-            }
-
-            // Fetch popular tags
-            const tagsRes = await fetch('http://localhost:3000/api/trending/tags');
-            if (tagsRes.ok) {
-                const data = await tagsRes.json();
-                setPopularTags(data.slice(0, 10));
-            }
-        } catch (error) {
-            console.error('Error fetching trending data:', error);
-        }
-    };
 
     return (
         <div className="space-y-6">

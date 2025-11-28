@@ -4,6 +4,7 @@ import { AdminLayout } from '../../layouts/AdminLayout';
 import { StatsCard } from '../../components/ui/stats-card';
 import { Users, FileQuestion, MessageSquare, UserCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { API_URL } from '../../config/api';
 
 interface Stats {
     total_users: number;
@@ -19,20 +20,21 @@ export function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+
+
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (user.role !== 'admin') {
             navigate('/');
             return;
         }
-
         fetchStats();
     }, [navigate]);
 
     const fetchStats = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/admin/stats', {
+            const response = await fetch(`${API_URL}/api/admin/stats`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

@@ -9,6 +9,8 @@ interface VoteButtonProps {
     userVote?: 'upvote' | 'downvote' | null;
 }
 
+import { API_URL } from '../../config/api';
+
 export function VoteButton({ votableType, votableId, initialUpvotes, userVote: initialUserVote }: VoteButtonProps) {
     const [upvotes, setUpvotes] = useState(initialUpvotes);
     const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(initialUserVote || null);
@@ -24,9 +26,8 @@ export function VoteButton({ votableType, votableId, initialUpvotes, userVote: i
         }
 
         setLoading(true);
-
         try {
-            const response = await fetch('http://localhost:3000/api/engagement/votes', {
+            const response = await fetch(`${API_URL}/api/engagement/votes`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

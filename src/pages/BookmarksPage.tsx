@@ -4,6 +4,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Bookmark, MessageSquare, Calendar, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config/api';
 
 interface BookmarkedQuestion {
     id: number;
@@ -20,6 +21,8 @@ export function BookmarksPage() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+
+
     useEffect(() => {
         fetchBookmarks();
     }, []);
@@ -32,7 +35,7 @@ export function BookmarksPage() {
                 return;
             }
 
-            const response = await fetch('http://localhost:3000/api/engagement/bookmarks', {
+            const response = await fetch(`${API_URL}/api/engagement/bookmarks`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -52,8 +55,8 @@ export function BookmarksPage() {
     const removeBookmark = async (questionId: number) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/engagement/bookmarks', {
-                method: 'POST',
+            const response = await fetch(`${API_URL}/api/engagement/bookmarks`, {
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`

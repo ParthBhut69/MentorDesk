@@ -3,6 +3,7 @@ import { Send, Trash2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
+import { API_URL } from '../../config/api';
 
 interface Comment {
     id: number;
@@ -29,7 +30,7 @@ export function CommentSection({ answerId }: CommentSectionProps) {
 
     const fetchComments = async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/engagement/comments/${answerId}`);
+            const response = await fetch(`${API_URL}/api/engagement/comments?answer_id=${answerId}`);
             if (response.ok) {
                 const data = await response.json();
                 setComments(data);
@@ -52,7 +53,7 @@ export function CommentSection({ answerId }: CommentSectionProps) {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3000/api/engagement/comments', {
+            const response = await fetch(`${API_URL}/api/engagement/comments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -81,7 +82,7 @@ export function CommentSection({ answerId }: CommentSectionProps) {
         if (!token) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/api/engagement/comments/${commentId}`, {
+            const response = await fetch(`${API_URL}/api/engagement/comments/${commentId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
