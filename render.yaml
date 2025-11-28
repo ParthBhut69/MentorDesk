@@ -10,3 +10,18 @@ services:
         value: production
       - key: PORT
         value: 10000
+
+staticSites:
+  - name: mentordesk-frontend
+    buildCommand: npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: mentordesk-backend
+          property: url
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
