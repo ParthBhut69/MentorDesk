@@ -80,7 +80,7 @@ export function ProfilePage() {
 
     const fetchProfileData = async (userId: number) => {
         try {
-            const response = await fetch(`${API_URL}/api/users/${userId}`);
+            const response = await fetch(`${API_URL}/api/users/profile/${userId}`);
             if (response.ok) {
                 const data = await response.json();
                 setUser(data);
