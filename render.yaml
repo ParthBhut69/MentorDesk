@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mentordesk-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install && npx knex migrate:latest
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
