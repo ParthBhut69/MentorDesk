@@ -5,10 +5,12 @@ import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader } from '../../components/ui/card';
 import { AuthLayout } from '../../layouts/AuthLayout';
 import { API_URL } from '../../config/api';
+import { Eye, EyeOff } from 'lucide-react';
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
@@ -73,13 +75,27 @@ export function LoginPage() {
                                     Forgot password?
                                 </Link>
                             </div>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                         <Button className="w-full" size="lg" type="submit">
                             Login

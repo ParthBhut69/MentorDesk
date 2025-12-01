@@ -71,6 +71,17 @@ const getProfile = async (req, res) => {
                 .count('id as count')
                 .first();
             user.following_count = following.count;
+
+            // Calculate stats
+            const questionsCount = await db('questions').where('user_id', userId).count('id as count').first();
+            const answersCount = await db('answers').where('user_id', userId).count('id as count').first();
+            const acceptedAnswersCount = await db('answers').where('user_id', userId).andWhere('is_accepted', true).count('id as count').first();
+
+            user.stats = {
+                questions: parseInt(questionsCount.count || 0),
+                answers: parseInt(answersCount.count || 0),
+                accepted_answers: parseInt(acceptedAnswersCount.count || 0)
+            };
         }
 
         if (!user) {

@@ -18,6 +18,30 @@ const createQuestion = async (req, res) => {
             image_url: req.body.image || null
         });
 
+        // Extract tags from title and description
+        const extractTags = (text) => {
+            const regex = /#(\w+)/g;
+            const matches = text.match(regex);
+            return matches ? matches.map(tag => tag.substring(1)) : [];
+        };
+
+        const titleTags = extractTags(title);
+        const descTags = extractTags(description);
+        const uniqueTags = [...new Set([...titleTags, ...descTags])];
+
+        // Save tags
+        for (const tagName of uniqueTags) {
+            let tag = await db('tags').where({ name: tagName }).first();
+            if (!tag) {
+                const [tagId] = await db('tags').insert({ name: tagName });
+                tag = { id: tagId };
+            }
+            await db('question_tags').insert({
+                question_id: id,
+                tag_id: tag.id
+            });
+        }
+
         const question = await db('questions').where({ id }).first();
         res.status(201).json(question);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
 import { Sidebar } from '../components/layout/Sidebar';
 import { QuestionCard } from '../components/feed/QuestionCard';
@@ -10,13 +10,28 @@ import { API_URL } from '../config/api';
 
 export function HomePage() {
     const [questions, setQuestions] = useState<any[]>([]);
+    const [trendingTags, setTrendingTags] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchQuestions();
+        fetchTrendingTags();
     }, [searchParams]);
+
+    const fetchTrendingTags = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/trending/tags`);
+            if (response.ok) {
+                const data = await response.json();
+                setTrendingTags(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch trending tags:', error);
+        }
+    };
 
     const fetchQuestions = async () => {
         try {
@@ -100,11 +115,19 @@ export function HomePage() {
                         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                             <h3 className="font-semibold text-slate-900 mb-2">Trending Topics</h3>
                             <div className="flex flex-wrap gap-2">
-                                {['Remote Work', 'AI Tools', 'Fundraising', 'Tax Law'].map(tag => (
-                                    <span key={tag} className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-full cursor-pointer hover:bg-slate-200">
-                                        #{tag}
-                                    </span>
-                                ))}
+                                {trendingTags.length > 0 ? (
+                                    trendingTags.map(tag => (
+                                        <span
+                                            key={tag.id}
+                                            onClick={() => navigate(`/?tag=${tag.name}`)}
+                                            className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-full cursor-pointer hover:bg-slate-200"
+                                        >
+                                            #{tag.name}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-slate-500">No trending topics yet</p>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -138,10 +138,13 @@ export function ProfilePage() {
         const file = e.target.files?.[0];
         if (!file || !editedUser) return;
 
-        // In a real app, we would upload the file to a server/storage
-        // For now, we'll just create a local URL
-        const imageUrl = URL.createObjectURL(file);
-        setEditedUser({ ...editedUser, avatarUrl: imageUrl });
+        // Convert file to base64 string for storage
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            setEditedUser({ ...editedUser, avatarUrl: base64String });
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSave = async () => {
@@ -550,7 +553,7 @@ export function ProfilePage() {
                                                     <MessageSquare className="h-5 w-5 text-primary-600 mt-1 flex-shrink-0" />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-start justify-between gap-2">
-                                                            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/questions/${question.id}`)}>
+                                                            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/question/${question.id}`)}>
                                                                 <p className="text-slate-900 font-medium hover:text-primary-600">
                                                                     {question.title}
                                                                 </p>
@@ -627,7 +630,7 @@ export function ProfilePage() {
                                     {activities
                                         .filter(activity => activeTab === 'all' || activity.type === activeTab.slice(0, -1))
                                         .map((activity) => (
-                                            <Card key={`${activity.type}-${activity.id}`} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/questions/${activity.type === 'question' ? activity.id : activity.question_id}`)}>
+                                            <Card key={`${activity.type}-${activity.id}`} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/question/${activity.type === 'question' ? activity.id : activity.question_id}`)}>
                                                 <CardContent className="p-4">
                                                     <div className="flex gap-3">
                                                         {activity.type === 'question' ? (

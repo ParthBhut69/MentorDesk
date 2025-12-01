@@ -62,7 +62,7 @@ export function QuestionDetailPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ content: answerText })
+                body: JSON.stringify({ answer_text: answerText })
             });
 
             if (response.ok) {
