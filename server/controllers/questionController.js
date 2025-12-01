@@ -142,8 +142,8 @@ const deleteQuestion = async (req, res) => {
             return res.status(404).json({ message: 'Question not found' });
         }
 
-        // Check user
-        if (question.user_id !== req.user.id) {
+        // Check user or admin - admins can delete any question (spam/inappropriate content)
+        if (question.user_id !== req.user.id && req.user.role !== 'admin') {
             return res.status(401).json({ message: 'User not authorized' });
         }
 

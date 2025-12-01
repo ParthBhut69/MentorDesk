@@ -1,6 +1,8 @@
 const db = require('../db/db');
 const { awardPoints, REWARDS } = require('./rewardController');
 const { createNotification } = require('./notificationController');
+const { notifyAnswerPosted, notifyAnswerLiked, notifyAnswerAccepted } = require('../services/notificationService');
+const { logActivityForQuestionTopics } = require('../services/activityLogger');
 
 // @desc    Create an answer
 // @route   POST /api/questions/:id/answers
@@ -35,16 +37,12 @@ const createAnswer = async (req, res) => {
             id
         );
 
-        // Create notification for question author
-        if (question.user_id !== req.user.id) {
-            await createNotification(
-                question.user_id,
-                'new_answer',
-                `${req.user.name} answered your question: "${question.title}"`,
-                id,
-                'answer'
-            );
-        }
+        // Log reply activity for all question topics
+        await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: id });
+
+        // Create notification for question author using enhanced service
+        const author = await db('users').where({ id: req.user.id }).first();
+        await notifyAnswerPosted(answer, question, author);
 
         res.status(201).json({
             ...answer,
@@ -84,8 +82,8 @@ const deleteAnswer = async (req, res) => {
             return res.status(404).json({ message: 'Answer not found' });
         }
 
-        // Check user
-        if (answer.user_id !== req.user.id) {
+        // Check user or admin
+        if (answer.user_id !== req.user.id && req.user.role !== 'admin') {
             return res.status(401).json({ message: 'User not authorized' });
         }
 
@@ -97,8 +95,117 @@ const deleteAnswer = async (req, res) => {
     }
 };
 
+// @desc    Vote on an answer (upvote/downvote)
+// @route   POST /api/answers/:id/vote
+// @access  Private
+const voteAnswer = async (req, res) => {
+    try {
+        const { vote_type } = req.body; // 'upvote' or 'downvote'
+        const answerId = req.params.id;
+
+        const answer = await db('answers').where({ id: answerId }).first();
+        if (!answer) {
+            return res.status(404).json({ message: 'Answer not found' });
+        }
+
+        // Check if user already voted
+        const existingVote = await db('votes')
+            .where({
+                user_id: req.user.id,
+                votable_type: 'answer',
+                votable_id: answerId
+            })
+            .first();
+
+        if (existingVote) {
+            if (existingVote.vote_type === vote_type) {
+                // Remove vote
+                await db('votes').where({ id: existingVote.id }).del();
+                const change = vote_type === 'upvote' ? -1 : 1;
+                await db('answers').where({ id: answerId }).increment('upvotes', change);
+            } else {
+                // Change vote
+                await db('votes').where({ id: existingVote.id }).update({ vote_type });
+                const change = vote_type === 'upvote' ? 2 : -2;
+                await db('answers').where({ id: answerId }).increment('upvotes', change);
+            }
+        } else {
+            // New vote
+            await db('votes').insert({
+                user_id: req.user.id,
+                votable_type: 'answer',
+                votable_id: answerId,
+                vote_type
+            });
+            const change = vote_type === 'upvote' ? 1 : -1;
+            await db('answers').where({ id: answerId }).increment('upvotes', change);
+
+            // Notify answer author if upvoted
+            if (vote_type === 'upvote' && answer.user_id !== req.user.id) {
+                const question = await db('questions').where({ id: answer.question_id }).first();
+                const liker = await db('users').where({ id: req.user.id }).first();
+                await notifyAnswerLiked(answer, liker, question);
+
+                // Log like activity for question topics
+                await logActivityForQuestionTopics(answer.question_id, req.user.id, 'like', { answerId });
+            }
+        }
+
+        const updatedAnswer = await db('answers').where({ id: answerId }).first();
+        res.json(updatedAnswer);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Accept an answer
+// @route   PUT /api/answers/:id/accept
+// @access  Private
+const acceptAnswer = async (req, res) => {
+    try {
+        const answerId = req.params.id;
+        const answer = await db('answers').where({ id: answerId }).first();
+
+        if (!answer) {
+            return res.status(404).json({ message: 'Answer not found' });
+        }
+
+        const question = await db('questions').where({ id: answer.question_id }).first();
+
+        // Only question author can accept
+        if (question.user_id !== req.user.id) {
+            return res.status(401).json({ message: 'Only question author can accept answers' });
+        }
+
+        // Unaccept other answers for this question
+        await db('answers')
+            .where({ question_id: question.id })
+            .update({ is_accepted: false });
+
+        // Accept this answer
+        await db('answers')
+            .where({ id: answerId })
+            .update({ is_accepted: true });
+
+        // Award points for accepted answer
+        await awardPoints(answer.user_id, 'answer_accepted', REWARDS.ANSWER_ACCEPTED, answerId);
+
+        // Notify answer author
+        await notifyAnswerAccepted(answer, question);
+
+        const updatedAnswer = await db('answers').where({ id: answerId }).first();
+        res.json(updatedAnswer);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 module.exports = {
     createAnswer,
     getAnswersByQuestionId,
     deleteAnswer,
+    voteAnswer,
+    acceptAnswer
 };
