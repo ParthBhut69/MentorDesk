@@ -31,7 +31,7 @@ export function MobileNav() {
                 </Link>
 
                 <Link
-                    to={`/profile/${JSON.parse(localStorage.getItem('user') || '{}').id || 'me'}`}
+                    to={JSON.parse(localStorage.getItem('user') || '{}').id ? `/profile/${JSON.parse(localStorage.getItem('user') || '{}').id}` : '/login'}
                     className={cn(
                         "flex flex-col items-center justify-center w-20 h-full gap-1 transition-colors",
                         location.pathname.startsWith('/profile') ? "text-primary-600" : "text-slate-500 hover:text-slate-900"

@@ -71,10 +71,13 @@ export function ProfilePage() {
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        if (id) {
+        if (id && !isNaN(parseInt(id))) {
             fetchProfileData(parseInt(id));
             fetchUserActivity(parseInt(id));
             fetchUserQuestions(parseInt(id));
+        } else if (id === 'me') {
+            // Handle legacy 'me' redirect or error
+            navigate('/login');
         }
     }, [id]);
 
