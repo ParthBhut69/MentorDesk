@@ -75,11 +75,20 @@ export function ProfilePage() {
             fetchProfileData(parseInt(id));
             fetchUserActivity(parseInt(id));
             fetchUserQuestions(parseInt(id));
+
+            // Auto-refresh profile data every 30 seconds to show updated points
+            const refreshInterval = setInterval(() => {
+                if (!isEditing) {
+                    fetchProfileData(parseInt(id));
+                }
+            }, 30000);
+
+            return () => clearInterval(refreshInterval);
         } else if (id === 'me') {
             // Handle legacy 'me' redirect or error
             navigate('/login');
         }
-    }, [id]);
+    }, [id, isEditing]);
 
     const fetchProfileData = async (userId: number) => {
         try {
@@ -201,10 +210,11 @@ export function ProfilePage() {
             });
 
             if (response.ok) {
-                // Refresh questions
+                // Refresh questions, activity, AND profile to update counts
                 if (id) {
                     fetchUserQuestions(parseInt(id));
                     fetchUserActivity(parseInt(id));
+                    fetchProfileData(parseInt(id)); // ✅ Added to update stats
                 }
             } else {
                 alert('Failed to delete question');
@@ -264,9 +274,9 @@ export function ProfilePage() {
                 {/* Profile Header */}
                 <Card>
                     <CardContent className="pt-6">
-                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                             {/* Avatar Section */}
-                            <div className="relative">
+                            <div className="relative mx-auto md:mx-0">
                                 <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
                                     <AvatarImage src={editedUser?.avatarUrl || user.avatarUrl} />
                                     <AvatarFallback className="text-4xl bg-primary-600 text-white">
@@ -294,10 +304,10 @@ export function ProfilePage() {
                                 )}
                             </div>
 
-                            <div className="flex-1 space-y-4 w-full">
+                            <div className="flex-1 space-y-4 w-full text-center md:text-left">
                                 {/* Name, Rank, and Points */}
                                 <div>
-                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                    <div className="flex items-center gap-3 mb-2 flex-wrap justify-center md:justify-start">
                                         {isEditing ? (
                                             <Input
                                                 value={editedUser?.name}
@@ -315,7 +325,7 @@ export function ProfilePage() {
 
                                     {/* Expert Badge */}
                                     {!isEditing && user.is_verified_expert && user.expert_role && (
-                                        <div className="mb-2">
+                                        <div className="mb-2 flex justify-center md:justify-start">
                                             <ExpertBadge
                                                 expertRole={user.expert_role}
                                                 isVerified={user.is_verified_expert}
@@ -326,7 +336,7 @@ export function ProfilePage() {
 
                                     {/* Rank and Points Display */}
                                     {!isEditing && user.rank && (
-                                        <div className="flex items-center gap-4 mb-3">
+                                        <div className="flex items-center gap-4 mb-3 justify-center md:justify-start">
                                             <RankBadge rank={user.rank} size="md" />
                                             <div className="flex items-center gap-2 bg-primary-50 px-3 py-1.5 rounded-full">
                                                 <Award className="h-4 w-4 text-primary-600" />
@@ -421,7 +431,7 @@ export function ProfilePage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+                                        <div className="flex flex-wrap gap-4 text-sm text-slate-500 justify-center md:justify-start">
                                             {user.location && (
                                                 <div className="flex items-center gap-1">
                                                     <MapPin className="h-4 w-4" />
@@ -461,7 +471,7 @@ export function ProfilePage() {
                                 </div>
 
                                 {/* Stats */}
-                                <div className="flex gap-6 pt-2 border-t border-slate-100">
+                                <div className="flex gap-6 pt-2 border-t border-slate-100 justify-center md:justify-start">
                                     <div className="flex flex-col items-center">
                                         <span className="font-bold text-slate-900">{user.follower_count || 0}</span>
                                         <span className="text-xs text-slate-500 uppercase tracking-wider">Followers</span>
@@ -471,14 +481,18 @@ export function ProfilePage() {
                                         <span className="text-xs text-slate-500 uppercase tracking-wider">Following</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <span className="font-bold text-slate-900">0</span>
+                                        <span className="font-bold text-slate-900">{user.stats?.questions || 0}</span>
+                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Questions</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="font-bold text-slate-900">{user.stats?.answers || 0}</span>
                                         <span className="text-xs text-slate-500 uppercase tracking-wider">Answers</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Edit/Save Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 mx-auto md:mx-0">
                                 {isEditing ? (
                                     <>
                                         <Button onClick={handleSave} disabled={isSaving}>
@@ -519,14 +533,14 @@ export function ProfilePage() {
                         className={`rounded-none border-b-2 ${activeTab === 'questions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500'} hover:bg-transparent`}
                         onClick={() => setActiveTab('questions')}
                     >
-                        Questions ({activities.filter(a => a.type === 'question').length})
+                        Questions
                     </Button>
                     <Button
                         variant="ghost"
                         className={`rounded-none border-b-2 ${activeTab === 'answers' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500'} hover:bg-transparent`}
                         onClick={() => setActiveTab('answers')}
                     >
-                        Answers ({activities.filter(a => a.type === 'answer').length})
+                        Answers
                     </Button>
                 </div>
 

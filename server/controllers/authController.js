@@ -69,6 +69,23 @@ const loginUser = async (req, res) => {
         const user = await db('users').where({ email }).first();
 
         if (user && (await bcrypt.compare(password, user.password))) {
+            // Check if 2FA is enabled
+            if (user.two_fa_enabled) {
+                // Return temporary token for 2FA verification
+                const tempToken = jwt.sign(
+                    { id: user.id, temp: true },
+                    process.env.JWT_SECRET || 'your-secret-key',
+                    { expiresIn: '10m' }
+                );
+
+                return res.json({
+                    requiresTwoFactor: true,
+                    userId: user.id,
+                    tempToken
+                });
+            }
+
+            // No 2FA - return full token
             res.json({
                 id: user.id,
                 name: user.name,
@@ -90,7 +107,11 @@ const loginUser = async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const googleAuth = async (req, res) => {
-    const { email, name, googleId } = req.body;
+    const { email, name, googleId, picture } = req.body;
+
+    if (!email || !googleId) {
+        return res.status(400).json({ message: 'Email and Google ID required' });
+    }
 
     try {
         // Check if user exists
@@ -99,12 +120,39 @@ const googleAuth = async (req, res) => {
         if (!user) {
             // Create new user with Google auth
             const [id] = await db('users').insert({
-                name,
+                name: name || email.split('@')[0],
                 email,
-                password: await bcrypt.hash(googleId, 10), // Use googleId as password placeholder
+                google_id: googleId,
+                oauth_provider: 'google',
+                avatar_url: picture || null,
+                password: await bcrypt.hash(googleId + Date.now(), 10), // Random password
             });
 
             user = await db('users').where({ id }).first();
+        } else if (!user.google_id) {
+            // Link Google account to existing user
+            await db('users')
+                .where({ id: user.id })
+                .update({
+                    google_id: googleId,
+                    oauth_provider: 'google',
+                    avatar_url: picture || user.avatar_url
+                });
+        }
+
+        // Check if 2FA is enabled (even for Google login)
+        if (user.two_fa_enabled) {
+            const tempToken = jwt.sign(
+                { id: user.id, temp: true },
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '10m' }
+            );
+
+            return res.json({
+                requiresTwoFactor: true,
+                userId: user.id,
+                tempToken
+            });
         }
 
         res.json({

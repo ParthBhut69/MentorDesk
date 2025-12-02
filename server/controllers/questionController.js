@@ -1,4 +1,5 @@
 const db = require('../db/db');
+const { awardPoints, REWARDS } = require('./rewardController');
 
 // @desc    Create a question
 // @route   POST /api/questions
@@ -41,6 +42,9 @@ const createQuestion = async (req, res) => {
                 tag_id: tag.id
             });
         }
+
+        // Award points for posting question
+        await awardPoints(req.user.id, 'question_posted', REWARDS.QUESTION_POSTED, id);
 
         const question = await db('questions').where({ id }).first();
         res.status(201).json(question);

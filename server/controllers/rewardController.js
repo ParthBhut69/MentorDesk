@@ -1,4 +1,5 @@
 const db = require('../db/db');
+const { checkAndAwardBadges } = require('./badgeController');
 
 // Rank thresholds
 const RANKS = {
@@ -12,9 +13,14 @@ const RANKS = {
 
 // Reward points
 const REWARDS = {
+    QUESTION_POSTED: 5,
     ANSWER_POSTED: 10,
     ANSWER_UPVOTED: 5,
-    ANSWER_ACCEPTED: 2
+    ANSWER_ACCEPTED: 15,
+    QUESTION_UPVOTED: 2,
+    FOLLOWER_GAINED: 3,
+    DAILY_LOGIN: 1,
+    STREAK_BONUS: 5
 };
 
 // Calculate rank based on points
@@ -30,12 +36,31 @@ const calculateRank = (points) => {
 // Award points to user
 const awardPoints = async (userId, actionType, pointsAwarded, relatedId = null) => {
     try {
+        // Check for duplicate reward (idempotency)
+        const existingReward = await db('rewards_log')
+            .where({
+                user_id: userId,
+                action_type: actionType,
+                related_id: relatedId
+            })
+            .first();
+
+        if (existingReward && relatedId) {
+            console.log('Reward already awarded for this action');
+            const user = await db('users').where('id', userId).first();
+            return {
+                points: user.points,
+                rank: user.rank,
+                pointsAwarded: 0
+            };
+        }
+
         // Add points to user
         await db('users')
             .where('id', userId)
             .increment('points', pointsAwarded);
 
-        // Get updated points
+        // Get updated points AFTER increment
         const user = await db('users').where('id', userId).first();
 
         // Update rank based on new points
@@ -54,10 +79,14 @@ const awardPoints = async (userId, actionType, pointsAwarded, relatedId = null) 
             related_id: relatedId
         });
 
+        // Check and award any new badges
+        const newBadges = await checkAndAwardBadges(userId);
+
         return {
-            points: user.points + pointsAwarded,
+            points: user.points,  // This is now the UPDATED value
             rank: newRank,
-            pointsAwarded
+            pointsAwarded,
+            newBadges
         };
     } catch (error) {
         console.error('Error awarding points:', error);

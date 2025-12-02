@@ -17,6 +17,7 @@ const searchRoutes = require('./routes/searchRoutes');
 const followerRoutes = require('./routes/followerRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const badgeRoutes = require('./routes/badgeRoutes');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/followers', followerRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/badges', badgeRoutes);
 
 // Serve static files from the React app
 const path = require('path');

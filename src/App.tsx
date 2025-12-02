@@ -15,6 +15,7 @@ import { SearchPage } from './pages/SearchPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { BookmarksPage } from './pages/BookmarksPage';
+import { TopicPage } from './pages/TopicPage';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/bookmarks" element={<BookmarksPage />} />
+      <Route path="/topic/:tag" element={<TopicPage />} />
 
       {/* Admin Routes */}
       <Route path="/admin" element={<AdminDashboard />} />

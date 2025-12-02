@@ -36,11 +36,33 @@ const updateProfile = async (req, res) => {
             .where('id', userId)
             .update(updateData);
 
-        // Fetch updated user
+        // Fetch complete updated user with all fields
         const updatedUser = await db('users')
             .where('id', userId)
-            .select('id', 'name', 'email', 'bio', 'location', 'website', 'linkedin', 'twitter', 'github', 'avatar_url as avatarUrl', 'points', 'rank')
+            .select(
+                'id', 'name', 'email', 'bio', 'location', 'website',
+                'linkedin', 'twitter', 'github', 'avatar_url as avatarUrl',
+                'points', 'rank', 'is_verified_expert', 'expert_role', 'follower_count'
+            )
             .first();
+
+        // Calculate following count
+        const following = await db('follows')
+            .where('follower_id', userId)
+            .count('id as count')
+            .first();
+        updatedUser.following_count = following.count;
+
+        // Calculate stats
+        const questionsCount = await db('questions').where('user_id', userId).count('id as count').first();
+        const answersCount = await db('answers').where('user_id', userId).count('id as count').first();
+        const acceptedAnswersCount = await db('answers').where('user_id', userId).andWhere('is_accepted', true).count('id as count').first();
+
+        updatedUser.stats = {
+            questions: parseInt(questionsCount.count || 0),
+            answers: parseInt(answersCount.count || 0),
+            accepted_answers: parseInt(acceptedAnswersCount.count || 0)
+        };
 
         console.log('Profile updated successfully');
         res.json(updatedUser);
