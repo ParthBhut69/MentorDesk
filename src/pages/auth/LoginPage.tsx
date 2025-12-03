@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader } from '../../components/ui/card';
 import { AuthLayout } from '../../layouts/AuthLayout';
+import { GoogleLoginButton } from '../../components/auth/GoogleLoginButton';
 import { API_URL } from '../../config/api';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -12,11 +14,13 @@ export function LoginPage() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
             const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -30,6 +34,7 @@ export function LoginPage() {
             const data = await response.json();
 
             if (response.ok) {
+                // Login successful
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data));
                 navigate('/');
@@ -38,8 +43,13 @@ export function LoginPage() {
             }
         } catch (err) {
             setError('Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
+
+    // Google Client ID from environment variable
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
     return (
         <AuthLayout>
@@ -47,12 +57,28 @@ export function LoginPage() {
                 <CardHeader className="space-y-1 text-center">
                     <h3 className="text-2xl font-semibold tracking-tight">Welcome back</h3>
                     <p className="text-sm text-slate-500">
-                        Enter your email to login to your account
+                        Enter your credentials to access your account
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    {/* Google Login */}
+                    {googleClientId && (
+                        <GoogleOAuthProvider clientId={googleClientId}>
+                            <GoogleLoginButton />
+                            <div className="relative my-4">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t" />
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-white px-2 text-slate-500">Or continue with</span>
+                                </div>
+                            </div>
+                        </GoogleOAuthProvider>
+                    )}
+
                     <form onSubmit={handleLogin} className="space-y-4">
                         {error && <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded">{error}</div>}
+
                         <div className="space-y-2">
                             <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 Email
@@ -66,12 +92,13 @@ export function LoginPage() {
                                 required
                             />
                         </div>
+
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                     Password
                                 </label>
-                                <Link to="#" className="text-sm font-medium text-primary-600 hover:underline">
+                                <Link to="/forgot-password" className="text-sm font-medium text-primary-600 hover:underline">
                                     Forgot password?
                                 </Link>
                             </div>
@@ -97,8 +124,9 @@ export function LoginPage() {
                                 </button>
                             </div>
                         </div>
-                        <Button className="w-full" size="lg" type="submit">
-                            Login
+
+                        <Button className="w-full" size="lg" type="submit" disabled={loading}>
+                            {loading ? 'Please wait...' : 'Login'}
                         </Button>
                     </form>
                 </CardContent>

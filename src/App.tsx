@@ -4,6 +4,8 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { AskQuestionPage } from './pages/AskQuestionPage';
 import { QuestionDetailPage } from './pages/QuestionDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -30,6 +32,8 @@ function App() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/bookmarks" element={<BookmarksPage />} />

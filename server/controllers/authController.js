@@ -69,23 +69,7 @@ const loginUser = async (req, res) => {
         const user = await db('users').where({ email }).first();
 
         if (user && (await bcrypt.compare(password, user.password))) {
-            // Check if 2FA is enabled
-            if (user.two_fa_enabled) {
-                // Return temporary token for 2FA verification
-                const tempToken = jwt.sign(
-                    { id: user.id, temp: true },
-                    process.env.JWT_SECRET || 'your-secret-key',
-                    { expiresIn: '10m' }
-                );
-
-                return res.json({
-                    requiresTwoFactor: true,
-                    userId: user.id,
-                    tempToken
-                });
-            }
-
-            // No 2FA - return full token
+            // No 2FA - return full token immediately
             res.json({
                 id: user.id,
                 name: user.name,
@@ -107,13 +91,35 @@ const loginUser = async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const googleAuth = async (req, res) => {
-    const { email, name, googleId, picture } = req.body;
+    const { credential } = req.body;
 
-    if (!email || !googleId) {
-        return res.status(400).json({ message: 'Email and Google ID required' });
+    if (!credential) {
+        return res.status(400).json({ message: 'Google credential required' });
     }
 
     try {
+        // Verify Google token server-side
+        const { OAuth2Client } = require('google-auth-library');
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+        let payload;
+        try {
+            const ticket = await client.verifyIdToken({
+                idToken: credential,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        } catch (verifyError) {
+            console.error('Google token verification failed:', verifyError);
+            return res.status(400).json({ message: 'Invalid Google token' });
+        }
+
+        const { sub: googleId, email, name, picture } = payload;
+
+        if (!email || !googleId) {
+            return res.status(400).json({ message: 'Invalid Google account data' });
+        }
+
         // Check if user exists
         let user = await db('users').where({ email }).first();
 
@@ -138,23 +144,12 @@ const googleAuth = async (req, res) => {
                     oauth_provider: 'google',
                     avatar_url: picture || user.avatar_url
                 });
+
+            // Refresh user data
+            user = await db('users').where({ id: user.id }).first();
         }
 
-        // Check if 2FA is enabled (even for Google login)
-        if (user.two_fa_enabled) {
-            const tempToken = jwt.sign(
-                { id: user.id, temp: true },
-                process.env.JWT_SECRET || 'your-secret-key',
-                { expiresIn: '10m' }
-            );
-
-            return res.json({
-                requiresTwoFactor: true,
-                userId: user.id,
-                tempToken
-            });
-        }
-
+        // Return token immediately
         res.json({
             id: user.id,
             name: user.name,
@@ -164,7 +159,7 @@ const googleAuth = async (req, res) => {
             token: generateToken(user.id, user.role || 'user'),
         });
     } catch (error) {
-        console.error(error);
+        console.error('Google auth error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

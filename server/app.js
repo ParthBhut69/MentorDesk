@@ -23,7 +23,12 @@ const app = express();
 
 // Middleware
 app.use(express.json({ limit: '10mb' })); // Increased limit for base64 images
-app.use(cors());
+app.use(cors({
+    origin: true, // Allow any origin for development
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(helmet({
     crossOriginResourcePolicy: false,
     contentSecurityPolicy: {
