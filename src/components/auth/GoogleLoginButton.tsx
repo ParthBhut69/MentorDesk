@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useState } from 'react';
 
-export function GoogleLoginButton() {
+export function GoogleLoginButton({ text = 'signin_with' }: { text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin' }) {
     const navigate = useNavigate();
     const [error, setError] = useState('');
 
@@ -42,7 +42,9 @@ export function GoogleLoginButton() {
                     onSuccess={handleSuccess}
                     onError={() => setError('Google Login Failed')}
                     useOneTap
-                    width="100%"
+                    text={text}
+                // width prop removed as "100%" is invalid. 
+                // The container div handles the width.
                 />
             </div>
         </div>

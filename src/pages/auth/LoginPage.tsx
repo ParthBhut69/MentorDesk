@@ -64,7 +64,7 @@ export function LoginPage() {
                     {/* Google Login */}
                     {googleClientId && (
                         <GoogleOAuthProvider clientId={googleClientId}>
-                            <GoogleLoginButton />
+                            <GoogleLoginButton text="signin_with" />
                             <div className="relative my-4">
                                 <div className="absolute inset-0 flex items-center">
                                     <span className="w-full border-t" />

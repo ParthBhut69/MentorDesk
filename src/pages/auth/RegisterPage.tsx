@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader } from '../../components/ui/card';
 import { AuthLayout } from '../../layouts/AuthLayout';
+import { GoogleLoginButton } from '../../components/auth/GoogleLoginButton';
 import { API_URL } from '../../config/api';
 
 export function RegisterPage() {
@@ -40,6 +42,9 @@ export function RegisterPage() {
         }
     };
 
+    // Google Client ID from environment variable
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
     return (
         <AuthLayout>
             <Card className="border-0 shadow-xl ring-1 ring-slate-900/5">
@@ -50,6 +55,21 @@ export function RegisterPage() {
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    {/* Google Signup */}
+                    {googleClientId && (
+                        <GoogleOAuthProvider clientId={googleClientId}>
+                            <GoogleLoginButton text="signup_with" />
+                            <div className="relative my-4">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t" />
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-white px-2 text-slate-500">Or continue with</span>
+                                </div>
+                            </div>
+                        </GoogleOAuthProvider>
+                    )}
+
                     <form onSubmit={handleRegister} className="space-y-4">
                         {error && <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded">{error}</div>}
                         <div className="space-y-2">
