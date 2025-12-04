@@ -14,7 +14,10 @@ const forgotPassword = async (req, res) => {
     }
 
     try {
-        const user = await db('users').where({ email }).first();
+        const user = await db('users')
+            .where({ email })
+            .whereNull('deleted_at')
+            .first();
 
         if (!user) {
             // Don't reveal if user exists or not for security
@@ -76,6 +79,7 @@ const resetPassword = async (req, res) => {
         const user = await db('users')
             .where('reset_password_token', resetTokenHash)
             .where('reset_password_expires', '>', new Date())
+            .whereNull('deleted_at')
             .first();
 
         if (!user) {

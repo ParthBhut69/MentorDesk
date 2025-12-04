@@ -4,7 +4,7 @@ import { AdminLayout } from '../../layouts/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { ArrowLeft, Mail, Calendar, FileQuestion, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Mail, Calendar, FileQuestion, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import { API_URL } from '../../config/api';
 
 interface UserDetails {
@@ -31,14 +31,21 @@ interface UserDetails {
         total_answers: number;
     };
     is_verified_expert?: boolean;
-    expert_role?: 'CA' | 'HR' | 'Marketing' | 'Lawyer' | null;
+    expert_role?: string | null;
 }
 
 export function UserDetails() {
     const { id } = useParams();
     const [user, setUser] = useState<UserDetails | null>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedExpertRole, setSelectedExpertRole] = useState('');
+    const [verifyingExpert, setVerifyingExpert] = useState(false);
     const navigate = useNavigate();
+
+    const expertRoles = [
+        'CA', 'Lawyer', 'HR', 'Marketing', 'Finance', 'Tax',
+        'Business', 'IT', 'Sales', 'Operations', 'Compliance', 'Strategy'
+    ];
 
     useEffect(() => {
         const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -49,8 +56,6 @@ export function UserDetails() {
 
         fetchUserDetails();
     }, [id, navigate]);
-
-
 
     const fetchUserDetails = async () => {
         try {
@@ -64,11 +69,73 @@ export function UserDetails() {
             if (response.ok) {
                 const data = await response.json();
                 setUser(data);
+                setSelectedExpertRole(data.expert_role || '');
             }
         } catch (error) {
             console.error('Error fetching user details:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const verifyExpert = async () => {
+        if (!selectedExpertRole) {
+            alert('Please select an expert role');
+            return;
+        }
+
+        setVerifyingExpert(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/admin/users/${id}/verify-expert`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ expert_role: selectedExpertRole })
+            });
+
+            if (response.ok) {
+                await fetchUserDetails();
+                alert('User verified as expert successfully!');
+            } else {
+                const data = await response.json();
+                alert(data.message || 'Failed to verify expert');
+            }
+        } catch (error) {
+            console.error('Error verifying expert:', error);
+            alert('Error verifying expert');
+        } finally {
+            setVerifyingExpert(false);
+        }
+    };
+
+    const removeExpertStatus = async () => {
+        if (!confirm('Are you sure you want to remove expert status from this user?')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/admin/users/${id}/expert-status`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                await fetchUserDetails();
+                setSelectedExpertRole('');
+                alert('Expert status removed successfully!');
+            } else {
+                const data = await response.json();
+                alert(data.message || 'Failed to remove expert status');
+            }
+        } catch (error) {
+            console.error('Error removing expert status:', error);
+            alert('Error removing expert status');
         }
     };
 
@@ -121,6 +188,11 @@ export function UserDetails() {
                                     <Badge variant={user.is_active ? 'default' : 'secondary'}>
                                         {user.is_active ? 'Active' : 'Inactive'}
                                     </Badge>
+                                    {user.is_verified_expert && (
+                                        <Badge variant="default" className="bg-green-600">
+                                            ✓ Verified {user.expert_role} Expert
+                                        </Badge>
+                                    )}
                                 </div>
                             </div>
 
@@ -156,30 +228,53 @@ export function UserDetails() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {user.is_verified_expert && (
+                            {user.is_verified_expert ? (
                                 <div>
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Badge variant="default">✓ Verified {user.expert_role} Expert</Badge>
+                                    <div className="flex items-center gap-3 mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <CheckCircle className="h-6 w-6 text-green-600" />
+                                        <div>
+                                            <p className="font-semibold text-green-900">Verified Expert</p>
+                                            <p className="text-sm text-green-700">Role: {user.expert_role}</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={removeExpertStatus}
+                                        variant="outline"
+                                        className="border-red-300 text-red-600 hover:bg-red-50"
+                                    >
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Remove Expert Status
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <XCircle className="h-6 w-6 text-slate-400" />
+                                        <p className="text-slate-600">This user is not verified as an expert</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                Select Expert Role
+                                            </label>
+                                            <select
+                                                value={selectedExpertRole}
+                                                onChange={(e) => setSelectedExpertRole(e.target.value)}
+                                                className="w-full border-slate-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                            >
+                                                <option value="">-- Select Role --</option>
+                                                {expertRoles.map((role) => (
+                                                    <option key={role} value={role}>{role}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                         <Button
-                                            onClick={async () => {
-                                                try {
-                                                    const token = localStorage.getItem('token');
-                                                    const response = await fetch(`${API_URL}/api/admin/users/${id}/verify-expert`, {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'Authorization': `Bearer ${token}`
-                                                        }
-                                                    });
-
-                                                    if (response.ok) {
-                                                        fetchUserDetails();
-                                                    }
-                                                } catch (error) {
-                                                    console.error('Error:', error);
-                                                }
-                                            }}
+                                            onClick={verifyExpert}
+                                            disabled={!selectedExpertRole || verifyingExpert}
+                                            className="w-full"
                                         >
-                                            Verify Expert
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            {verifyingExpert ? 'Verifying...' : 'Verify as Expert'}
                                         </Button>
                                     </div>
                                 </div>

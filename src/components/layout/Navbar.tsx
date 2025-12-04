@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, X, Home, TrendingUp, MessageSquare, Briefcase, PieChart, Users, Star, Scale, Cpu, Bookmark } from 'lucide-react';
+import { Search, Bell, Menu, X, Home, TrendingUp, MessageSquare, Briefcase, PieChart, Users, Star, Scale, Cpu, Bookmark, Settings, User, LogOut, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -97,26 +97,52 @@ export function Navbar() {
                     <div className="hidden sm:flex items-center space-x-2">
                         {localStorage.getItem('user') ? (
                             <div className="flex items-center gap-4">
-                                <Link to={`/profile/${JSON.parse(localStorage.getItem('user') || '{}').id}`} className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-primary-600">
-                                    <Avatar className="h-8 w-8 border border-slate-200">
-                                        <AvatarImage src={JSON.parse(localStorage.getItem('user') || '{}').avatarUrl} />
-                                        <AvatarFallback className="bg-primary-50 text-primary-700">
-                                            {JSON.parse(localStorage.getItem('user') || '{}').name?.[0] || 'U'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <span className="hidden md:inline">{JSON.parse(localStorage.getItem('user') || '{}').name}</span>
-                                </Link>
-                                <Button
-                                    variant="ghost"
-                                    className="text-slate-600 font-medium hover:text-red-600"
-                                    onClick={() => {
-                                        localStorage.removeItem('token');
-                                        localStorage.removeItem('user');
-                                        window.location.reload();
-                                    }}
-                                >
-                                    Log out
-                                </Button>
+                                <div className="relative group">
+                                    <Link
+                                        to={`/profile/${JSON.parse(localStorage.getItem('user') || '{}').id}`}
+                                        className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-primary-600"
+                                    >
+                                        <Avatar className="h-8 w-8 border border-slate-200">
+                                            <AvatarImage src={JSON.parse(localStorage.getItem('user') || '{}').avatarUrl} />
+                                            <AvatarFallback className="bg-primary-50 text-primary-700">
+                                                {JSON.parse(localStorage.getItem('user') || '{}').name?.[0] || 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="hidden md:inline">{JSON.parse(localStorage.getItem('user') || '{}').name}</span>
+                                        <ChevronDown className="h-4 w-4 hidden md:inline" />
+                                    </Link>
+
+                                    {/* Dropdown Menu */}
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                        <div className="py-1">
+                                            <Link
+                                                to={`/profile/${JSON.parse(localStorage.getItem('user') || '{}').id}`}
+                                                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                            >
+                                                <User className="h-4 w-4" />
+                                                Profile
+                                            </Link>
+                                            <Link
+                                                to="/preferences"
+                                                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                            >
+                                                <Settings className="h-4 w-4" />
+                                                Preferences
+                                            </Link>
+                                            <button
+                                                onClick={() => {
+                                                    localStorage.removeItem('token');
+                                                    localStorage.removeItem('user');
+                                                    window.location.reload();
+                                                }}
+                                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                            >
+                                                <LogOut className="h-4 w-4" />
+                                                Log out
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <>
@@ -221,6 +247,11 @@ export function Navbar() {
                                     <Link to={`/profile/${JSON.parse(localStorage.getItem('user') || '{}').id}`} className="block w-full" onClick={() => setIsMenuOpen(false)}>
                                         <Button variant="outline" className="w-full justify-center">
                                             View Profile
+                                        </Button>
+                                    </Link>
+                                    <Link to="/preferences" className="block w-full" onClick={() => setIsMenuOpen(false)}>
+                                        <Button variant="outline" className="w-full justify-center">
+                                            Preferences
                                         </Button>
                                     </Link>
                                     <Button

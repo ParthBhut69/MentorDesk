@@ -1,10 +1,20 @@
 const db = require('../db/db');
 
 // Get all users with their post counts
+// Get all users with their post counts
 const getAllUsers = async (req, res) => {
     try {
-        const users = await db('users')
-            .leftJoin('questions', 'users.id', 'questions.user_id')
+        const { show_deleted } = req.query;
+
+        let query = db('users')
+            .leftJoin('questions', 'users.id', 'questions.user_id');
+
+        // Only filter out deleted users if show_deleted is not true
+        if (show_deleted !== 'true') {
+            query = query.whereNull('users.deleted_at');
+        }
+
+        const users = await query
             .select(
                 'users.id',
                 'users.name',
@@ -14,6 +24,8 @@ const getAllUsers = async (req, res) => {
                 'users.rank',
                 'users.points',
                 'users.created_at',
+                'users.deleted_at',
+                'users.deleted_by',
                 db.raw('COUNT(DISTINCT questions.id) as post_count')
             )
             .groupBy('users.id')
@@ -31,9 +43,10 @@ const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Get user info
+        // Get user info - exclude soft-deleted users
         const user = await db('users')
             .where('users.id', id)
+            .whereNull('users.deleted_at')  // ← Exclude soft-deleted users
             .first();
 
         if (!user) {
@@ -76,7 +89,17 @@ const updateUser = async (req, res) => {
         const { id } = req.params;
         const { role, is_active, rank } = req.body;
 
-        const updateData = {};
+        // Check if user exists and is not deleted
+        const existingUser = await db('users')
+            .where('id', id)
+            .whereNull('deleted_at')
+            .first();
+
+        if (!existingUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const updateData = { updated_at: new Date() };
         if (role !== undefined) updateData.role = role;
         if (is_active !== undefined) updateData.is_active = is_active;
 
@@ -112,6 +135,7 @@ const updateUser = async (req, res) => {
 
         const updatedUser = await db('users')
             .where('id', id)
+            .whereNull('deleted_at')
             .first();
 
         delete updatedUser.password;
@@ -123,24 +147,83 @@ const updateUser = async (req, res) => {
     }
 };
 
-// Delete user
+// Delete user (SOFT DELETE)
+// Delete user (SOFT DELETE)
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if user exists
-        const user = await db('users').where('id', id).first();
+        // Check if user exists and is not already deleted
+        const user = await db('users')
+            .where('id', id)
+            .whereNull('deleted_at')
+            .first();
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Delete user (cascade will handle related records)
-        await db('users').where('id', id).del();
+        // Prevent self-deletion
+        if (req.user && req.user.id === parseInt(id)) {
+            return res.status(400).json({ message: 'Cannot delete your own account' });
+        }
 
-        res.json({ message: 'User deleted successfully' });
+        // Soft delete user - preserve data for audit trail
+        await db('users')
+            .where('id', id)
+            .update({
+                deleted_at: new Date(),
+                deleted_by: req.user ? req.user.id : null,
+                is_active: false,
+                updated_at: new Date()
+            });
+
+        console.log(`[AdminController] User ${id} soft-deleted by admin ${req.user ? req.user.id : 'unknown'}`);
+
+        res.json({
+            message: 'User deleted successfully',
+            note: 'User data has been preserved and can be recovered if needed'
+        });
     } catch (error) {
         console.error('Error deleting user:', error);
         res.status(500).json({ message: 'Failed to delete user' });
+    }
+};
+
+// Restore soft-deleted user
+const restoreUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if user exists (including deleted ones)
+        const user = await db('users')
+            .where('id', id)
+            .first();
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.deleted_at) {
+            return res.status(400).json({ message: 'User is not deleted' });
+        }
+
+        // Restore user
+        await db('users')
+            .where('id', id)
+            .update({
+                deleted_at: null,
+                deleted_by: null,
+                is_active: true,
+                updated_at: new Date()
+            });
+
+        console.log(`[AdminController] User ${id} restored by admin ${req.user ? req.user.id : 'unknown'}`);
+
+        res.json({ message: 'User restored successfully' });
+    } catch (error) {
+        console.error('Error restoring user:', error);
+        res.status(500).json({ message: 'Failed to restore user' });
     }
 };
 
@@ -198,7 +281,10 @@ const verifyExpert = async (req, res) => {
         }
 
         // Check if user exists
-        const user = await db('users').where('id', id).first();
+        const user = await db('users')
+            .where('id', id)
+            .whereNull('deleted_at')
+            .first();
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -233,7 +319,10 @@ const removeExpertStatus = async (req, res) => {
         const { id } = req.params;
 
         // Check if user exists
-        const user = await db('users').where('id', id).first();
+        const user = await db('users')
+            .where('id', id)
+            .whereNull('deleted_at')
+            .first();
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -267,6 +356,7 @@ module.exports = {
     getUserById,
     updateUser,
     deleteUser,
+    restoreUser,
     getStats,
     verifyExpert,
     removeExpertStatus

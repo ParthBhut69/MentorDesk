@@ -22,13 +22,15 @@ const badgeRoutes = require('./routes/badgeRoutes');
 const app = express();
 
 // Middleware
-app.use(express.json({ limit: '10mb' })); // Increased limit for base64 images
+app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: true, // Allow any origin for development
+    origin: true, // Allow any origin
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+app.options('*', cors()); // Enable pre-flight for all routes
 app.use(helmet({
     crossOriginResourcePolicy: false,
     contentSecurityPolicy: {

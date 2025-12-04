@@ -18,6 +18,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { BookmarksPage } from './pages/BookmarksPage';
 import { TopicPage } from './pages/TopicPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { PreferencesPage } from './pages/PreferencesPage';
 
 function App() {
   return (
@@ -38,11 +40,15 @@ function App() {
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/bookmarks" element={<BookmarksPage />} />
       <Route path="/topic/:tag" element={<TopicPage />} />
+      <Route path="/preferences" element={<PreferencesPage />} />
 
       {/* Admin Routes */}
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin/users" element={<UserManagement />} />
       <Route path="/admin/users/:id" element={<UserDetails />} />
+
+      {/* 404 Route */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

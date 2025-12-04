@@ -9,6 +9,18 @@ const generateToken = (id, role) => {
     });
 };
 
+// Email validation helper
+const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+// Sanitize user input
+const sanitizeInput = (input, maxLength = 255) => {
+    if (!input) return '';
+    return input.trim().substring(0, maxLength);
+};
+
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
@@ -19,26 +31,44 @@ const registerUser = async (req, res) => {
         return res.status(400).json({ message: 'Please add all fields' });
     }
 
+    // Validate email format
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Sanitize inputs
+    const sanitizedName = sanitizeInput(name);
+    const sanitizedEmail = email.toLowerCase().trim();
+
     try {
-        // Check if user exists
-        const userExists = await db('users').where({ email }).first();
+        // Use transaction for atomicity
+        const user = await db.transaction(async (trx) => {
+            // Check if user exists (including soft-deleted users)
+            const userExists = await trx('users')
+                .where({ email: sanitizedEmail })
+                .first();
 
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
+            if (userExists) {
+                if (userExists.deleted_at) {
+                    throw new Error('This account has been deleted. Please contact support.');
+                }
+                throw new Error('User already exists');
+            }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+            // Hash password
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user
-        const [id] = await db('users').insert({
-            name,
-            email,
-            password: hashedPassword,
+            // Create user
+            const [id] = await trx('users').insert({
+                name: sanitizedName,
+                email: sanitizedEmail,
+                password: hashedPassword,
+            });
+
+            const newUser = await trx('users').where({ id }).first();
+            return newUser;
         });
-
-        const user = await db('users').where({ id }).first();
 
         if (user) {
             res.status(201).json({
@@ -53,8 +83,12 @@ const registerUser = async (req, res) => {
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Registration error:', error);
+        if (error.message === 'User already exists' || error.message.includes('deleted')) {
+            res.status(400).json({ message: error.message });
+        } else {
+            res.status(500).json({ message: 'Server Error' });
+        }
     }
 };
 
@@ -64,12 +98,33 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
-    try {
-        // Check for user email
-        const user = await db('users').where({ email }).first();
+    // Validate email format
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+    }
 
-        if (user && (await bcrypt.compare(password, user.password))) {
-            // No 2FA - return full token immediately
+    const sanitizedEmail = email.toLowerCase().trim();
+
+    try {
+        // Check for user email (exclude soft-deleted users)
+        const user = await db('users')
+            .where({ email: sanitizedEmail })
+            .whereNull('deleted_at')
+            .first();
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Check if account is active
+        if (user.is_active === false) {
+            return res.status(403).json({ message: 'Account is deactivated. Please contact support.' });
+        }
+
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (isPasswordValid) {
             res.json({
                 id: user.id,
                 name: user.name,
@@ -82,7 +137,7 @@ const loginUser = async (req, res) => {
             res.status(400).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
-        console.error(error);
+        console.error('Login error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -120,34 +175,76 @@ const googleAuth = async (req, res) => {
             return res.status(400).json({ message: 'Invalid Google account data' });
         }
 
-        // Check if user exists
-        let user = await db('users').where({ email }).first();
+        // Validate email format
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email format from Google' });
+        }
 
-        if (!user) {
-            // Create new user with Google auth
-            const [id] = await db('users').insert({
-                name: name || email.split('@')[0],
-                email,
-                google_id: googleId,
-                oauth_provider: 'google',
-                avatar_url: picture || null,
-                password: await bcrypt.hash(googleId + Date.now(), 10), // Random password
-            });
+        // Sanitize inputs
+        const sanitizedEmail = email.toLowerCase().trim();
+        const sanitizedName = sanitizeInput(name || email.split('@')[0]);
+        const sanitizedGoogleId = sanitizeInput(googleId, 255);
 
-            user = await db('users').where({ id }).first();
-        } else if (!user.google_id) {
-            // Link Google account to existing user
-            await db('users')
-                .where({ id: user.id })
-                .update({
-                    google_id: googleId,
+        // Use transaction to prevent race conditions
+        const user = await db.transaction(async (trx) => {
+            // Try to find existing user by email OR google_id
+            // We include soft-deleted users so we can restore them
+            let existingUser = await trx('users')
+                .where(function () {
+                    this.where({ email: sanitizedEmail })
+                        .orWhere({ google_id: sanitizedGoogleId });
+                })
+                .first();
+
+            if (!existingUser) {
+                // Create new user with Google auth - ATOMIC OPERATION
+                console.log('[GoogleAuth] Creating new user for:', sanitizedEmail);
+
+                const [id] = await trx('users').insert({
+                    name: sanitizedName,
+                    email: sanitizedEmail,
+                    google_id: sanitizedGoogleId,
                     oauth_provider: 'google',
-                    avatar_url: picture || user.avatar_url
+                    avatar_url: picture || null,
+                    password: await bcrypt.hash(sanitizedGoogleId + Date.now(), 10), // Random password
                 });
 
-            // Refresh user data
-            user = await db('users').where({ id: user.id }).first();
-        }
+                existingUser = await trx('users').where({ id }).first();
+                console.log('[GoogleAuth] New user created with ID:', id);
+            } else {
+                // User exists (active or soft-deleted)
+                const updateData = {
+                    google_id: sanitizedGoogleId,
+                    oauth_provider: existingUser.oauth_provider || 'google',
+                    avatar_url: picture || existingUser.avatar_url,
+                    updated_at: new Date()
+                };
+
+                // If user was soft-deleted, RESTORE them
+                if (existingUser.deleted_at) {
+                    console.log('[GoogleAuth] Restoring soft-deleted user:', existingUser.id);
+                    updateData.deleted_at = null;
+                    updateData.deleted_by = null;
+                    updateData.is_active = true;
+                }
+
+                await trx('users')
+                    .where({ id: existingUser.id })
+                    .update(updateData);
+
+                // Refresh user data after update
+                existingUser = await trx('users').where({ id: existingUser.id }).first();
+                console.log('[GoogleAuth] User logged in/linked successfully:', existingUser.id);
+            }
+
+            // Check if account is active (only if we didn't just restore it)
+            // If we just restored it, is_active is true. If it was manually deactivated (not deleted), we still block.
+            if (existingUser.is_active === false && !existingUser.deleted_at) {
+                throw new Error('Account is deactivated. Please contact support.');
+            }
+
+            return existingUser;
+        });
 
         // Return token immediately
         res.json({
@@ -160,6 +257,18 @@ const googleAuth = async (req, res) => {
         });
     } catch (error) {
         console.error('Google auth error:', error);
+
+        if (error.message.includes('deactivated')) {
+            return res.status(403).json({ message: error.message });
+        }
+
+        // Handle unique constraint violations gracefully
+        if (error.code === 'SQLITE_CONSTRAINT' || error.code === '23505') {
+            return res.status(409).json({
+                message: 'Account already exists. Please try logging in again.'
+            });
+        }
+
         res.status(500).json({ message: 'Server Error' });
     }
 };

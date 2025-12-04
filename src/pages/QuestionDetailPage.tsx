@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { VoteButton } from '../components/engagement/VoteButton';
 import { ShareButton } from '../components/engagement/ShareButton';
 import { BookmarkButton } from '../components/engagement/BookmarkButton';
+import { ExpertBadge } from '../components/common/ExpertBadge';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { API_URL } from '../config/api';
 import { useAuth } from '../lib/auth';
@@ -182,6 +183,9 @@ export function QuestionDetailPage() {
                                     >
                                         {question.user_name || 'Anonymous'}
                                     </Link>
+                                    {question.is_verified_expert && question.expert_role && (
+                                        <ExpertBadge expertRole={question.expert_role} isVerified={true} size="sm" />
+                                    )}
                                     <span className="text-xs text-slate-500">• {new Date(question.created_at).toLocaleDateString()}</span>
                                 </div>
                                 <div className="prose prose-slate max-w-none mb-6 text-slate-800">
@@ -258,13 +262,16 @@ export function QuestionDetailPage() {
                                                                 <AvatarImage src={answer.user_avatar} alt={answer.user_name} />
                                                                 <AvatarFallback>{answer.user_name?.[0] || 'U'}</AvatarFallback>
                                                             </Avatar>
-                                                            <div>
+                                                            <div className="flex items-center gap-2">
                                                                 <Link
                                                                     to={`/profile/${answer.user_id}`}
                                                                     className="text-sm font-bold block hover:text-primary-600 transition-colors"
                                                                 >
                                                                     {answer.user_name || 'Anonymous'}
                                                                 </Link>
+                                                                {answer.is_verified_expert && answer.expert_role && (
+                                                                    <ExpertBadge expertRole={answer.expert_role} isVerified={true} size="sm" />
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">

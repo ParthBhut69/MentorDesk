@@ -16,40 +16,54 @@ const createAnswer = async (req, res) => {
     }
 
     try {
-        const question = await db('questions').where({ id: question_id }).first();
-        if (!question) {
-            return res.status(404).json({ message: 'Question not found' });
-        }
+        const result = await db.transaction(async (trx) => {
+            const question = await trx('questions').where({ id: question_id }).first();
+            if (!question) {
+                throw new Error('Question not found');
+            }
 
-        const [id] = await db('answers').insert({
-            question_id,
-            user_id: req.user.id,
-            answer_text,
+            const [id] = await trx('answers').insert({
+                question_id,
+                user_id: req.user.id,
+                answer_text,
+            });
+
+            const answer = await trx('answers').where({ id }).first();
+
+            // Award points for posting answer
+            const rewardResult = await awardPoints(
+                req.user.id,
+                'answer_posted',
+                REWARDS.ANSWER_POSTED,
+                id,
+                trx
+            );
+
+            // Log reply activity for all question topics
+            // Note: logActivityForQuestionTopics might need update to support trx, but it's less critical if it fails independently.
+            // For now, we keep it outside or assume it handles itself.
+            // Ideally, we should pass trx to it too.
+
+            return { answer, rewardResult };
         });
 
-        const answer = await db('answers').where({ id }).first();
-
-        // Award points for posting answer
-        const rewardResult = await awardPoints(
-            req.user.id,
-            'answer_posted',
-            REWARDS.ANSWER_POSTED,
-            id
-        );
-
-        // Log reply activity for all question topics
-        await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: id });
+        // Perform non-critical side effects AFTER transaction commits
+        await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: result.answer.id });
 
         // Create notification for question author using enhanced service
         const author = await db('users').where({ id: req.user.id }).first();
-        await notifyAnswerPosted(answer, question, author);
+        const question = await db('questions').where({ id: question_id }).first();
+        await notifyAnswerPosted(result.answer, question, author);
 
         res.status(201).json({
-            ...answer,
-            reward: rewardResult
+            ...result.answer,
+            reward: result.rewardResult
         });
     } catch (error) {
         console.error(error);
+        if (error.message === 'Question not found') {
+            return res.status(404).json({ message: 'Question not found' });
+        }
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -61,7 +75,13 @@ const getAnswersByQuestionId = async (req, res) => {
     try {
         const answers = await db('answers')
             .join('users', 'answers.user_id', 'users.id')
-            .select('answers.*', 'users.name as user_name', 'users.avatar_url as user_avatar')
+            .select(
+                'answers.*',
+                'users.name as user_name',
+                'users.avatar_url as user_avatar',
+                'users.is_verified_expert',
+                'users.expert_role'
+            )
             .where({ question_id: req.params.id })
             .orderBy('answers.created_at', 'asc');
         res.json(answers);

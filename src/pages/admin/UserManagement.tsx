@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
-import { Search, Eye, Trash2, UserX, UserCheck } from 'lucide-react';
+import { Search, Eye, Trash2, UserX, UserCheck, RotateCcw } from 'lucide-react';
 import { API_URL } from '../../config/api';
 
 interface User {
@@ -18,12 +18,14 @@ interface User {
     post_count: number;
     rank?: string;
     points?: number;
+    deleted_at?: string;
 }
 
 export function UserManagement() {
     const [users, setUsers] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showDeleted, setShowDeleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -35,7 +37,7 @@ export function UserManagement() {
         }
 
         fetchUsers();
-    }, [navigate]);
+    }, [navigate, showDeleted]);
 
     useEffect(() => {
         if (searchTerm) {
@@ -54,7 +56,8 @@ export function UserManagement() {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/admin/users`, {
+
+            const response = await fetch(`${API_URL}/api/admin/users?show_deleted=${showDeleted}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -75,7 +78,7 @@ export function UserManagement() {
     const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/admin/users/${userId}/status`, {
+            const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -86,6 +89,8 @@ export function UserManagement() {
 
             if (response.ok) {
                 fetchUsers();
+            } else {
+                console.error('Failed to update user status');
             }
         } catch (error) {
             console.error('Error updating user status:', error);
@@ -112,10 +117,30 @@ export function UserManagement() {
         }
     };
 
+    const restoreUser = async (userId: number) => {
+        if (!confirm('Are you sure you want to restore this user?')) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/admin/users/${userId}/restore`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                fetchUsers();
+            }
+        } catch (error) {
+            console.error('Error restoring user:', error);
+        }
+    };
+
     const changeRank = async (userId: number, newRank: string) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/admin/users/${userId}/rank`, {
+            const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -126,6 +151,8 @@ export function UserManagement() {
 
             if (response.ok) {
                 fetchUsers();
+            } else {
+                console.error('Failed to update rank');
             }
         } catch (error) {
             console.error('Error updating user rank:', error);
@@ -150,9 +177,21 @@ export function UserManagement() {
                         <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
                         <p className="text-slate-600 mt-1">Manage all users and their permissions</p>
                     </div>
-                    <Badge variant="outline" className="text-sm">
-                        {filteredUsers.length} {filteredUsers.length === 1 ? 'User' : 'Users'}
-                    </Badge>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="showDeleted"
+                                checked={showDeleted}
+                                onChange={(e) => setShowDeleted(e.target.checked)}
+                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                            />
+                            <label htmlFor="showDeleted" className="text-sm text-slate-700">Show Deleted</label>
+                        </div>
+                        <Badge variant="outline" className="text-sm">
+                            {filteredUsers.length} {filteredUsers.length === 1 ? 'User' : 'Users'}
+                        </Badge>
+                    </div>
                 </div>
 
                 {/* Search */}
@@ -224,31 +263,45 @@ export function UserManagement() {
                                             </td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <Link to={`/admin/users/${user.id}`}>
-                                                        <Button variant="ghost" size="sm">
-                                                            <Eye className="h-4 w-4" />
+                                                    {user.deleted_at ? (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => restoreUser(user.id)}
+                                                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                            title="Restore User"
+                                                        >
+                                                            <RotateCcw className="h-4 w-4" />
                                                         </Button>
-                                                    </Link>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => toggleUserStatus(user.id, user.is_active)}
-                                                        title={user.is_active ? 'Deactivate' : 'Activate'}
-                                                    >
-                                                        {user.is_active ? (
-                                                            <UserX className="h-4 w-4 text-orange-600" />
-                                                        ) : (
-                                                            <UserCheck className="h-4 w-4 text-green-600" />
-                                                        )}
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => deleteUser(user.id)}
-                                                        className="text-red-600 hover:text-red-700"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    ) : (
+                                                        <>
+                                                            <Link to={`/admin/users/${user.id}`}>
+                                                                <Button variant="ghost" size="sm">
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => toggleUserStatus(user.id, user.is_active)}
+                                                                title={user.is_active ? 'Deactivate' : 'Activate'}
+                                                            >
+                                                                {user.is_active ? (
+                                                                    <UserX className="h-4 w-4 text-orange-600" />
+                                                                ) : (
+                                                                    <UserCheck className="h-4 w-4 text-green-600" />
+                                                                )}
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => deleteUser(user.id)}
+                                                                className="text-red-600 hover:text-red-700"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

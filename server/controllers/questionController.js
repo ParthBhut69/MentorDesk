@@ -12,42 +12,46 @@ const createQuestion = async (req, res) => {
     }
 
     try {
-        const [id] = await db('questions').insert({
-            user_id: req.user.id,
-            title,
-            description,
-            image_url: req.body.image || null
+        const result = await db.transaction(async (trx) => {
+            const [id] = await trx('questions').insert({
+                user_id: req.user.id,
+                title,
+                description,
+                image_url: req.body.image || null
+            });
+
+            // Extract tags from title and description
+            const extractTags = (text) => {
+                const regex = /#(\w+)/g;
+                const matches = text.match(regex);
+                return matches ? matches.map(tag => tag.substring(1)) : [];
+            };
+
+            const titleTags = extractTags(title);
+            const descTags = extractTags(description);
+            const uniqueTags = [...new Set([...titleTags, ...descTags])];
+
+            // Save tags
+            for (const tagName of uniqueTags) {
+                let tag = await trx('tags').where({ name: tagName }).first();
+                if (!tag) {
+                    const [tagId] = await trx('tags').insert({ name: tagName });
+                    tag = { id: tagId };
+                }
+                await trx('question_tags').insert({
+                    question_id: id,
+                    tag_id: tag.id
+                });
+            }
+
+            // Award points for posting question
+            await awardPoints(req.user.id, 'question_posted', REWARDS.QUESTION_POSTED, id, trx);
+
+            const question = await trx('questions').where({ id }).first();
+            return question;
         });
 
-        // Extract tags from title and description
-        const extractTags = (text) => {
-            const regex = /#(\w+)/g;
-            const matches = text.match(regex);
-            return matches ? matches.map(tag => tag.substring(1)) : [];
-        };
-
-        const titleTags = extractTags(title);
-        const descTags = extractTags(description);
-        const uniqueTags = [...new Set([...titleTags, ...descTags])];
-
-        // Save tags
-        for (const tagName of uniqueTags) {
-            let tag = await db('tags').where({ name: tagName }).first();
-            if (!tag) {
-                const [tagId] = await db('tags').insert({ name: tagName });
-                tag = { id: tagId };
-            }
-            await db('question_tags').insert({
-                question_id: id,
-                tag_id: tag.id
-            });
-        }
-
-        // Award points for posting question
-        await awardPoints(req.user.id, 'question_posted', REWARDS.QUESTION_POSTED, id);
-
-        const question = await db('questions').where({ id }).first();
-        res.status(201).json(question);
+        res.status(201).json(result);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });
@@ -66,6 +70,8 @@ const getAllQuestions = async (req, res) => {
                 'questions.*',
                 'users.name as user_name',
                 'users.avatar_url as user_avatar',
+                'users.is_verified_expert',
+                'users.expert_role',
                 db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id) as answers_count')
             );
 
@@ -108,6 +114,8 @@ const getQuestionById = async (req, res) => {
                 'questions.*',
                 'users.name as user_name',
                 'users.avatar_url as user_avatar',
+                'users.is_verified_expert',
+                'users.expert_role',
                 db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id) as answers_count')
             )
             .where('questions.id', req.params.id)
@@ -194,6 +202,8 @@ const getUserQuestions = async (req, res) => {
                 'questions.*',
                 'users.name as user_name',
                 'users.avatar_url as user_avatar',
+                'users.is_verified_expert',
+                'users.expert_role',
                 db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id) as answers_count')
             )
             .where('questions.user_id', req.params.userId)
