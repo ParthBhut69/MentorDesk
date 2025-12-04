@@ -1,17 +1,32 @@
 # MentorDesk Deployment Guide
 
-## Deploying to Render
+## ⚠️ CRITICAL: Database Configuration
 
-### Prerequisites
-1. GitHub repository must be pushed
-2. Render account created and linked to GitHub
+**DO NOT use SQLite in production!** Render's filesystem is ephemeral, meaning:
+- SQLite database gets wiped on every deployment
+- User data will be lost
+- File restarts cause data loss
 
-### Setup Instructions
+**SOLUTION: You MUST use PostgreSQL on Render**
 
-#### 1. Create Web Service on Render
-1. Go to Render Dashboard
-2. Click "New +" → "Web Service"
-3. Connect your GitHub repository `ParthBhut69/MentorDesk`
+## Deploying to Render with PostgreSQL
+
+### Step 1: Create PostgreSQL Database First
+
+1. Go to Render Dashboard → "New +" → "PostgreSQL"
+2. Configure:
+   - **Name**: `mentordesk-db`
+   - **Database**: `mentordesk`
+   - **User**: `mentordesk`
+   - **Region**: Same as your web service
+   - **Plan**: Free (or paid for more resources)
+3. Click "Create Database"
+4. **IMPORTANT**: Wait for database to be created before proceeding
+
+### Step 2: Create Web Service
+
+1. Go to Render Dashboard → "New +" → "Web Service"
+2. Connect your GitHub repository `ParthBhut69/MentorDesk`
 4. Configure as follows:
 
 **Build Settings:**
@@ -70,6 +85,14 @@ If you want to use PostgreSQL on Render:
 4. Redeploy
 
 ### Troubleshooting
+
+**Issue: User data disappears after deployment or restart**
+- **Cause**: Using SQLite in production (Render's filesystem is ephemeral)
+- **Solution**: 
+  1. Create a PostgreSQL database in Render
+  2. Update `DATABASE_URL` environment variable 
+  3. Redeploy (migrations will run automatically)
+  4. **Note**: Existing SQLite data will be lost. This is expected.
 
 **Issue**: "Cannot GET /"
 - **Solution**: Make sure build completed successfully and `/dist` folder exists

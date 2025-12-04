@@ -14,5 +14,12 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: DATABASE_URL
-        value: file:./prod.sqlite3
-    
+        fromDatabase:
+          name: mentordesk-db
+          property: connectionString
+
+databases:
+  - name: mentordesk-db
+    databaseName: mentordesk
+    user: mentordesk
+    plan: free
