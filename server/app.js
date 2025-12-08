@@ -60,13 +60,39 @@ app.use('/api/badges', badgeRoutes);
 
 // Serve static files from the React app
 const path = require('path');
-app.use(express.static(path.join(__dirname, '../dist')));
+const fs = require('fs');
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
+// Determine the correct dist path
+const distPath = path.join(__dirname, '../dist');
+const indexPath = path.join(distPath, 'index.html');
+
+// Check if dist folder exists and log
+if (fs.existsSync(distPath)) {
+    console.log(`[Static Files] Serving from: ${distPath}`);
+    app.use(express.static(distPath));
+
+    // The "catchall" handler: for any request that doesn't
+    // match one above, send back React's index.html file.
+    app.get('*', (req, res) => {
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.status(404).send('Frontend not built. Please run: npm run build');
+        }
+    });
+} else {
+    console.warn(`[Static Files] Warning: dist folder not found at ${distPath}`);
+    console.warn('[Static Files] API routes will work, but frontend will not be served');
+
+    // Fallback route
+    app.get('*', (req, res) => {
+        res.status(503).json({
+            message: 'Frontend not available. Build not completed.',
+            hint: 'Run: npm run build in the project root'
+        });
+    });
+}
+
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
