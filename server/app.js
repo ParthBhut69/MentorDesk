@@ -46,6 +46,18 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
+// Test endpoint to verify CORS
+app.get('/api/test', (req, res) => {
+    res.json({
+        message: 'CORS is working!',
+        cors: {
+            origin: req.headers.origin,
+            allowed: ['https://mentordesk.onrender.com', 'http://localhost:5173', 'http://localhost:3000']
+        }
+    });
+});
+
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
