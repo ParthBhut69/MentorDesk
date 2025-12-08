@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, googleAuth } = require('../controllers/authController');
+const { registerUser, loginUser, googleAuth, validateToken, refreshToken } = require('../controllers/authController');
 const { forgotPassword, resetPassword } = require('../controllers/passwordController');
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/google', googleAuth);
+
+// Token Management Routes
+router.get('/validate', validateToken);
+router.post('/refresh', refreshToken);
 
 // Password Reset Routes
 router.post('/forgot-password', forgotPassword);

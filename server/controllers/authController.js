@@ -268,8 +268,114 @@ const googleAuth = async (req, res) => {
                 message: 'Account already exists. Please try logging in again.'
             });
         }
-
         res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Validate current token
+// @route   GET /api/auth/validate
+// @access  Private (token needs to be sent)
+const validateToken = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ valid: false, message: 'No token provided' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+
+        const user = await db('users')
+            .where({ id: decoded.id })
+            .whereNull('deleted_at')
+            .first();
+
+        if (!user || user.is_active === false) {
+            return res.status(401).json({ valid: false, message: 'User not found or inactive' });
+        }
+
+        res.json({
+            valid: true,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role || 'user',
+                avatarUrl: user.avatar_url
+            }
+        });
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ valid: false, message: 'Token expired', expired: true });
+        }
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ valid: false, message: 'Invalid token' });
+        }
+        console.error('Token validation error:', error);
+        res.status(500).json({ valid: false, message: 'Server error' });
+    }
+};
+
+// @desc    Refresh token
+// @route   POST /api/auth/refresh
+// @access  Public (old token needs to be sent)
+const refreshToken = async (req, res) => {
+    try {
+        const oldToken = req.headers.authorization?.split(' ')[1] || req.body.token;
+
+        if (!oldToken) {
+            return res.status(401).json({ message: 'No token provided' });
+        }
+
+        // Verify token even if expired (we'll allow refresh within 7 days of expiration)
+        let decoded;
+        try {
+            decoded = jwt.verify(oldToken, process.env.JWT_SECRET || 'your-secret-key', {
+                ignoreExpiration: false
+            });
+        } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                // Allow refresh if token expired less than 7 days ago
+                decoded = jwt.decode(oldToken);
+                const expiredDate = new Date(error.expiredAt);
+                const now = new Date();
+                const daysSinceExpired = (now - expiredDate) / (1000 * 60 * 60 * 24);
+
+                if (daysSinceExpired > 7) {
+                    return res.status(401).json({
+                        message: 'Token expired too long ago. Please login again.',
+                        requireLogin: true
+                    });
+                }
+            } else {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+        }
+
+        // Get user from database
+        const user = await db('users')
+            .where({ id: decoded.id })
+            .whereNull('deleted_at')
+            .first();
+
+        if (!user || user.is_active === false) {
+            return res.status(401).json({ message: 'User not found or inactive' });
+        }
+
+        // Generate new token
+        const newToken = generateToken(user.id, user.role || 'user');
+
+        res.json({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role || 'user',
+            avatarUrl: user.avatar_url,
+            token: newToken
+        });
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -277,4 +383,6 @@ module.exports = {
     registerUser,
     loginUser,
     googleAuth,
+    validateToken,
+    refreshToken
 };

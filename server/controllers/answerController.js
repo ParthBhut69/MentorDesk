@@ -74,15 +74,16 @@ const createAnswer = async (req, res) => {
 const getAnswersByQuestionId = async (req, res) => {
     try {
         const answers = await db('answers')
-            .join('users', 'answers.user_id', 'users.id')
+            .leftJoin('users', 'answers.user_id', 'users.id')
             .select(
                 'answers.*',
-                'users.name as user_name',
-                'users.avatar_url as user_avatar',
-                'users.is_verified_expert',
-                'users.expert_role'
+                db.raw('COALESCE(users.name, \'[Deleted User]\') as user_name'),
+                db.raw('COALESCE(users.avatar_url, null) as user_avatar'),
+                db.raw('COALESCE(users.is_verified_expert, false) as is_verified_expert'),
+                db.raw('COALESCE(users.expert_role, null) as expert_role')
             )
             .where({ question_id: req.params.id })
+            .whereNull('answers.deleted_at')  // Exclude soft-deleted answers
             .orderBy('answers.created_at', 'asc');
         res.json(answers);
     } catch (error) {
@@ -91,12 +92,15 @@ const getAnswersByQuestionId = async (req, res) => {
     }
 };
 
-// @desc    Delete answer
+// @desc    Delete answer (SOFT DELETE)
 // @route   DELETE /api/answers/:id
 // @access  Private
 const deleteAnswer = async (req, res) => {
     try {
-        const answer = await db('answers').where({ id: req.params.id }).first();
+        const answer = await db('answers')
+            .where({ id: req.params.id })
+            .whereNull('deleted_at')  // Already deleted check
+            .first();
 
         if (!answer) {
             return res.status(404).json({ message: 'Answer not found' });
@@ -107,10 +111,18 @@ const deleteAnswer = async (req, res) => {
             return res.status(401).json({ message: 'User not authorized' });
         }
 
-        await db('answers').where({ id: req.params.id }).del();
-        res.json({ id: req.params.id });
+        // SOFT DELETE instead of hard delete
+        await db('answers')
+            .where({ id: req.params.id })
+            .update({
+                deleted_at: db.fn.now(),
+                deleted_by: req.user.id
+            });
+
+        console.log(`Answer ${req.params.id} soft-deleted by user ${req.user.id}`);
+        res.json({ id: req.params.id, message: 'Answer deleted successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('Error deleting answer:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -123,7 +135,10 @@ const voteAnswer = async (req, res) => {
         const { vote_type } = req.body; // 'upvote' or 'downvote'
         const answerId = req.params.id;
 
-        const answer = await db('answers').where({ id: answerId }).first();
+        const answer = await db('answers')
+            .where({ id: answerId })
+            .whereNull('deleted_at')  // Don't allow voting on deleted answers
+            .first();
         if (!answer) {
             return res.status(404).json({ message: 'Answer not found' });
         }

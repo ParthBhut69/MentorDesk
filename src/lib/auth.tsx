@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from "react";
 import { useNavigate } from 'react-router-dom';
+import { api } from './api';
 
 interface User {
     id: number;
@@ -21,22 +22,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Check for existing user in localStorage
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
+        // Validate existing token on mount
+        const validateStoredToken = async () => {
+            const storedUser = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
 
-        if (storedUser && token) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                console.error('Error parsing stored user:', error);
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
+            if (storedUser && token) {
+                try {
+                    // Validate token with backend
+                    const response = await api.get('/auth/validate');
+
+                    if (response.data.valid) {
+                        setUser(JSON.parse(storedUser));
+                    } else {
+                        // Token invalid, clear storage
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('token');
+                    }
+                } catch (error: any) {
+                    console.error('Token validation failed:', error);
+
+                    // If token expired, try to refresh it
+                    if (error.response?.data?.expired) {
+                        try {
+                            const refreshResponse = await api.post('/auth/refresh', { token });
+
+                            if (refreshResponse.data.token) {
+                                // Successfully refreshed
+                                localStorage.setItem('token', refreshResponse.data.token);
+                                localStorage.setItem('user', JSON.stringify({
+                                    id: refreshResponse.data.id,
+                                    name: refreshResponse.data.name,
+                                    email: refreshResponse.data.email,
+                                    role: refreshResponse.data.role,
+                                    avatarUrl: refreshResponse.data.avatarUrl
+                                }));
+                                setUser(refreshResponse.data);
+                            }
+                        } catch (refreshError) {
+                            console.error('Token refresh failed:', refreshError);
+                            // Clear invalid token
+                            localStorage.removeItem('user');
+                            localStorage.removeItem('token');
+                        }
+                    } else {
+                        // Other error, clear storage
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('token');
+                    }
+                }
             }
-        }
+            setIsLoading(false);
+        };
+
+        validateStoredToken();
     }, []);
 
     const login = (token: string, userData: User) => {
@@ -51,6 +94,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         navigate('/login');
     };
+
+    // Show loading state while validating token
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <AuthContext.Provider value={{

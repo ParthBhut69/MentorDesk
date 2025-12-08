@@ -65,19 +65,23 @@ const getAllQuestions = async (req, res) => {
     try {
         const { filter, tag } = req.query;
         let query = db('questions')
-            .join('users', 'questions.user_id', 'users.id')
+            .leftJoin('users', 'questions.user_id', 'users.id')
             .select(
                 'questions.*',
-                'users.name as user_name',
-                'users.avatar_url as user_avatar',
-                'users.is_verified_expert',
-                'users.expert_role',
-                db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id) as answers_count')
-            );
+                db.raw('COALESCE(users.name, \'[Deleted User]\') as user_name'),
+                db.raw('COALESCE(users.avatar_url, null) as user_avatar'),
+                db.raw('COALESCE(users.is_verified_expert, false) as is_verified_expert'),
+                db.raw('COALESCE(users.expert_role, null) as expert_role'),
+                db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id AND answers.deleted_at IS NULL) as answers_count')
+            )
+            .whereNull('questions.deleted_at');  // Exclude soft-deleted questions
 
         if (filter === 'unanswered') {
             query = query
-                .leftJoin('answers', 'questions.id', 'answers.question_id')
+                .leftJoin('answers', function () {
+                    this.on('questions.id', '=', 'answers.question_id')
+                        .andOnNull('answers.deleted_at');
+                })
                 .whereNull('answers.id');
         } else if (filter === 'trending') {
             // Trending logic is handled in trendingController, but simple sort here
@@ -109,16 +113,17 @@ const getAllQuestions = async (req, res) => {
 const getQuestionById = async (req, res) => {
     try {
         const question = await db('questions')
-            .join('users', 'questions.user_id', 'users.id')
+            .leftJoin('users', 'questions.user_id', 'users.id')
             .select(
                 'questions.*',
-                'users.name as user_name',
-                'users.avatar_url as user_avatar',
-                'users.is_verified_expert',
-                'users.expert_role',
-                db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id) as answers_count')
+                db.raw('COALESCE(users.name, \'[Deleted User]\') as user_name'),
+                db.raw('COALESCE(users.avatar_url, null) as user_avatar'),
+                db.raw('COALESCE(users.is_verified_expert, false) as is_verified_expert'),
+                db.raw('COALESCE(users.expert_role, null) as expert_role'),
+                db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id AND answers.deleted_at IS NULL) as answers_count')
             )
             .where('questions.id', req.params.id)
+            .whereNull('questions.deleted_at')  // Exclude soft-deleted
             .first();
 
         if (!question) {
@@ -167,12 +172,15 @@ const updateQuestion = async (req, res) => {
     }
 };
 
-// @desc    Delete question
+// @desc    Delete question (SOFT DELETE)
 // @route   DELETE /api/questions/:id
 // @access  Private
 const deleteQuestion = async (req, res) => {
     try {
-        const question = await db('questions').where({ id: req.params.id }).first();
+        const question = await db('questions')
+            .where({ id: req.params.id })
+            .whereNull('deleted_at')  // Already deleted check
+            .first();
 
         if (!question) {
             return res.status(404).json({ message: 'Question not found' });
@@ -183,10 +191,18 @@ const deleteQuestion = async (req, res) => {
             return res.status(401).json({ message: 'User not authorized' });
         }
 
-        await db('questions').where({ id: req.params.id }).del();
-        res.json({ id: req.params.id });
+        // SOFT DELETE instead of hard delete
+        await db('questions')
+            .where({ id: req.params.id })
+            .update({
+                deleted_at: db.fn.now(),
+                deleted_by: req.user.id
+            });
+
+        console.log(`Question ${req.params.id} soft-deleted by user ${req.user.id}`);
+        res.json({ id: req.params.id, message: 'Question deleted successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('Error deleting question:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -197,16 +213,17 @@ const deleteQuestion = async (req, res) => {
 const getUserQuestions = async (req, res) => {
     try {
         const questions = await db('questions')
-            .join('users', 'questions.user_id', 'users.id')
+            .leftJoin('users', 'questions.user_id', 'users.id')
             .select(
                 'questions.*',
-                'users.name as user_name',
-                'users.avatar_url as user_avatar',
-                'users.is_verified_expert',
-                'users.expert_role',
-                db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id) as answers_count')
+                db.raw('COALESCE(users.name, \'[Deleted User]\') as user_name'),
+                db.raw('COALESCE(users.avatar_url, null) as user_avatar'),
+                db.raw('COALESCE(users.is_verified_expert, false) as is_verified_expert'),
+                db.raw('COALESCE(users.expert_role, null) as expert_role'),
+                db.raw('(SELECT COUNT(*) FROM answers WHERE answers.question_id = questions.id AND answers.deleted_at IS NULL) as answers_count')
             )
             .where('questions.user_id', req.params.userId)
+            .whereNull('questions.deleted_at')  // Exclude soft-deleted
             .orderBy('questions.created_at', 'desc');
 
         res.json(questions);
