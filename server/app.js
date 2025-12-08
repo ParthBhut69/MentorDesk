@@ -25,7 +25,11 @@ const app = express();
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: true, // Allow any origin
+    origin: [
+        'https://mentordesk.onrender.com',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
