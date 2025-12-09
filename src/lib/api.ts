@@ -23,8 +23,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        // Only redirect on 401 if not on auth pages (to prevent login loops)
+        const isAuthPage = window.location.pathname.includes('/login') ||
+            window.location.pathname.includes('/register');
+
+        if (error.response?.status === 401 && !isAuthPage) {
             // Unauthorized - clear token and redirect to login
+            console.log('401 Unauthorized, clearing auth and redirecting');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';

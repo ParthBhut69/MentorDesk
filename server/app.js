@@ -93,18 +93,35 @@ if (fs.existsSync(distPath)) {
         if (fs.existsSync(indexPath)) {
             res.sendFile(indexPath);
         } else {
-            res.status(404).send('Frontend not built. Please run: npm run build');
+            console.error('[Static Files] index.html not found');
+            res.status(404).json({
+                message: 'Frontend not built',
+                hint: 'Run: npm run build in the project root',
+                development: process.env.NODE_ENV === 'development' ?
+                    'In development, run the frontend separately with: npm run dev' : undefined
+            });
         }
     });
 } else {
     console.warn(`[Static Files] Warning: dist folder not found at ${distPath}`);
-    console.warn('[Static Files] API routes will work, but frontend will not be served');
 
-    // Fallback route
+    if (process.env.NODE_ENV === 'development') {
+        console.log('[Static Files] Running in DEVELOPMENT mode');
+        console.log('[Static Files] Start frontend separately: cd .. && npm run dev');
+        console.log('[Static Files] API routes will work at http://localhost:3000/api/*');
+    } else {
+        console.warn('[Static Files] Running in PRODUCTION without build - this is an error!');
+    }
+
+    // Fallback route for development - just show a helpful message
     app.get('*', (req, res) => {
         res.status(503).json({
-            message: 'Frontend not available. Build not completed.',
-            hint: 'Run: npm run build in the project root'
+            message: 'Frontend not available',
+            environment: process.env.NODE_ENV || 'unknown',
+            apiStatus: 'API is running',
+            hint: process.env.NODE_ENV === 'development' ?
+                'Start frontend separately with: npm run dev' :
+                'Build frontend with: npm run build'
         });
     });
 }

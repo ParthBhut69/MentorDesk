@@ -39,10 +39,20 @@ export function LoginPage() {
                 localStorage.setItem('user', JSON.stringify(data));
                 navigate('/');
             } else {
-                setError(data.message || 'Login failed');
+                // Show specific server error message
+                setError(data.message || 'Login failed. Please check your credentials.');
             }
-        } catch (err) {
-            setError('Something went wrong. Please try again.');
+        } catch (err: any) {
+            // Handle network errors specifically
+            console.error('Login error:', err);
+
+            if (err.name === 'TypeError' && err.message.includes('fetch')) {
+                setError('Unable to connect to server. Please check your internet connection.');
+            } else if (err.message.includes('timeout')) {
+                setError('Request timed out. Please try again.');
+            } else {
+                setError('An unexpected error occurred. Please try again later.');
+            }
         } finally {
             setLoading(false);
         }

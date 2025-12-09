@@ -31,51 +31,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const storedUser = localStorage.getItem('user');
             const token = localStorage.getItem('token');
 
-            if (storedUser && token) {
-                try {
-                    // Validate token with backend
-                    const response = await api.get('/auth/validate');
+            // If no token or user, just finish loading
+            if (!storedUser || !token) {
+                setIsLoading(false);
+                return;
+            }
+            try {
+                // Validate token with backend
+                const response = await api.get('/auth/validate');
 
-                    if (response.data.valid) {
-                        setUser(JSON.parse(storedUser));
-                    } else {
-                        // Token invalid, clear storage
-                        localStorage.removeItem('user');
-                        localStorage.removeItem('token');
-                    }
-                } catch (error: any) {
-                    console.error('Token validation failed:', error);
+                if (response.data.valid) {
+                    setUser(JSON.parse(storedUser));
+                } else {
+                    // Token invalid, clear storage
+                    console.log('Token invalid, clearing storage');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            } catch (error: any) {
+                console.error('Token validation failed:', error);
 
-                    // If token expired, try to refresh it
-                    if (error.response?.data?.expired) {
-                        try {
-                            const refreshResponse = await api.post('/auth/refresh', { token });
+                // If token expired, try to refresh it
+                if (error.response?.data?.expired) {
+                    try {
+                        const refreshResponse = await api.post('/auth/refresh', { token });
 
-                            if (refreshResponse.data.token) {
-                                // Successfully refreshed
-                                localStorage.setItem('token', refreshResponse.data.token);
-                                localStorage.setItem('user', JSON.stringify({
-                                    id: refreshResponse.data.id,
-                                    name: refreshResponse.data.name,
-                                    email: refreshResponse.data.email,
-                                    role: refreshResponse.data.role,
-                                    avatarUrl: refreshResponse.data.avatarUrl
-                                }));
-                                setUser(refreshResponse.data);
-                            }
-                        } catch (refreshError) {
-                            console.error('Token refresh failed:', refreshError);
-                            // Clear invalid token
+                        if (refreshResponse.data.token) {
+                            // Successfully refreshed
+                            localStorage.setItem('token', refreshResponse.data.token);
+                            localStorage.setItem('user', JSON.stringify({
+                                id: refreshResponse.data.id,
+                                name: refreshResponse.data.name,
+                                email: refreshResponse.data.email,
+                                role: refreshResponse.data.role,
+                                avatarUrl: refreshResponse.data.avatarUrl
+                            }));
+                            setUser(refreshResponse.data);
+                        } else {
+                            // Refresh failed, clear storage
                             localStorage.removeItem('user');
                             localStorage.removeItem('token');
                         }
-                    } else {
-                        // Other error, clear storage
+                    } catch (refreshError) {
+                        console.error('Token refresh failed:', refreshError);
+                        // Clear invalid token
                         localStorage.removeItem('user');
                         localStorage.removeItem('token');
                     }
+                } else {
+                    // Other error, clear storage
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
                 }
             }
+
             setIsLoading(false);
         };
 

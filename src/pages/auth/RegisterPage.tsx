@@ -13,11 +13,13 @@ export function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
             const response = await fetch(`${API_URL}/api/auth/register`, {
@@ -35,10 +37,22 @@ export function RegisterPage() {
                 localStorage.setItem('user', JSON.stringify(data));
                 navigate('/');
             } else {
-                setError(data.message || 'Registration failed');
+                // Show specific server error message
+                setError(data.message || 'Registration failed. Please try again.');
             }
-        } catch (err) {
-            setError('Something went wrong. Please try again.');
+        } catch (err: any) {
+            // Handle network errors specifically
+            console.error('Registration error:', err);
+
+            if (err.name === 'TypeError' && err.message.includes('fetch')) {
+                setError('Unable to connect to server. Please check your internet connection.');
+            } else if (err.message.includes('timeout')) {
+                setError('Request timed out. Please try again.');
+            } else {
+                setError('An unexpected error occurred. Please try again later.');
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -112,8 +126,8 @@ export function RegisterPage() {
                             />
                             <p className="text-xs text-slate-500">Must be at least 6 characters</p>
                         </div>
-                        <Button className="w-full" size="lg" type="submit">
-                            Create account
+                        <Button className="w-full" size="lg" type="submit" disabled={loading}>
+                            {loading ? 'Creating account...' : 'Create account'}
                         </Button>
                     </form>
                 </CardContent>

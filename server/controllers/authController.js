@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db/db');
+const { isValidEmail, validatePassword, validateName, sanitizeEmail, sanitizeInput } = require('../utils/validation');
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -9,26 +10,21 @@ const generateToken = (id, role) => {
     });
 };
 
-// Email validation helper
-const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-};
-
-// Sanitize user input
-const sanitizeInput = (input, maxLength = 255) => {
-    if (!input) return '';
-    return input.trim().substring(0, maxLength);
-};
-
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
     const { name, email, password } = req.body;
 
+    // Validate all required fields
     if (!name || !email || !password) {
-        return res.status(400).json({ message: 'Please add all fields' });
+        return res.status(400).json({ message: 'Please provide name, email, and password' });
+    }
+
+    // Validate name
+    const nameValidation = validateName(name);
+    if (!nameValidation.valid) {
+        return res.status(400).json({ message: nameValidation.message });
     }
 
     // Validate email format
@@ -36,9 +32,15 @@ const registerUser = async (req, res) => {
         return res.status(400).json({ message: 'Invalid email format' });
     }
 
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+        return res.status(400).json({ message: passwordValidation.message });
+    }
+
     // Sanitize inputs
-    const sanitizedName = sanitizeInput(name);
-    const sanitizedEmail = email.toLowerCase().trim();
+    const sanitizedName = nameValidation.sanitized;
+    const sanitizedEmail = sanitizeEmail(email);
 
     try {
         // Use transaction for atomicity
@@ -157,6 +159,11 @@ const googleAuth = async (req, res) => {
         const { OAuth2Client } = require('google-auth-library');
         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+        if (!process.env.GOOGLE_CLIENT_ID) {
+            console.error('GOOGLE_CLIENT_ID not configured');
+            return res.status(500).json({ message: 'Google OAuth not configured properly' });
+        }
+
         let payload;
         try {
             const ticket = await client.verifyIdToken({
@@ -165,13 +172,16 @@ const googleAuth = async (req, res) => {
             });
             payload = ticket.getPayload();
         } catch (verifyError) {
-            console.error('Google token verification failed:', verifyError);
-            return res.status(400).json({ message: 'Invalid Google token' });
+            console.error('Google token verification failed:', verifyError.message);
+            return res.status(400).json({
+                message: 'Invalid or expired Google token. Please try again.'
+            });
         }
 
         const { sub: googleId, email, name, picture } = payload;
 
         if (!email || !googleId) {
+            console.error('Missing email or googleId from Google payload');
             return res.status(400).json({ message: 'Invalid Google account data' });
         }
 
@@ -181,7 +191,7 @@ const googleAuth = async (req, res) => {
         }
 
         // Sanitize inputs
-        const sanitizedEmail = email.toLowerCase().trim();
+        const sanitizedEmail = sanitizeEmail(email);
         const sanitizedName = sanitizeInput(name || email.split('@')[0]);
         const sanitizedGoogleId = sanitizeInput(googleId, 255);
 
