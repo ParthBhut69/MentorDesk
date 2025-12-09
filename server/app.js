@@ -34,7 +34,16 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-app.options('*', cors()); // Enable pre-flight for all routes
+app.options('*', cors({
+    origin: [
+        'https://mentordesk.onrender.com',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+})); // Enable pre-flight for all routes with same CORS config
 app.use(helmet({
     crossOriginResourcePolicy: false,
     contentSecurityPolicy: {
