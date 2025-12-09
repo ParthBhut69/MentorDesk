@@ -115,11 +115,13 @@ Update `server/services/emailService.js` to use AWS SES.
 4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
 5. Application type: **Web application**
 6. Authorized JavaScript origins:
-   - `http://localhost:5173` (development)
-   - `https://yourdomain.com` (production)
+   - `http://localhost:5173`
+   - `http://localhost:3000`
+   - `https://mentordesk.onrender.com` (production)
 7. Authorized redirect URIs:
-   - `http://localhost:5173` (development)
-   - `https://yourdomain.com` (production)
+   - `http://localhost:5173`
+   - `http://localhost:3000`
+   - `https://mentordesk.onrender.com` (production)
 8. Copy the **Client ID**
 9. Add to both `.env` files (backend and frontend)
 
