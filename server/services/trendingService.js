@@ -303,9 +303,12 @@ async function getTrendingTopicDetails(topicId) {
         }
 
         // Get recent activity breakdown
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
         const recentActivity = await db('topic_activity_logs')
             .where('topic_id', topicId)
-            .where('created_at', '>=', db.raw("datetime('now', '-7 days')"))
+            .where('created_at', '>=', sevenDaysAgo)
             .select('activity_type')
             .count('* as count')
             .groupBy('activity_type');

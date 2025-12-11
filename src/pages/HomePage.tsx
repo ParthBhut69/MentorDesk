@@ -49,10 +49,19 @@ export function HomePage() {
             }
 
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
-            setQuestions(data);
+            if (Array.isArray(data)) {
+                setQuestions(data);
+            } else {
+                console.error('Data is not an array:', data);
+                setQuestions([]);
+            }
         } catch (error) {
             console.error('Failed to fetch questions:', error);
+            setQuestions([]);
         } finally {
             setLoading(false);
         }

@@ -33,10 +33,15 @@ export function QuestionDetailPage() {
     const fetchQuestion = async () => {
         try {
             const response = await fetch(`${API_URL}/api/questions/${id}`);
+            if (!response.ok) {
+                if (response.status === 404) setQuestion(null);
+                throw new Error('Failed to load question');
+            }
             const data = await response.json();
             setQuestion(data);
         } catch (error) {
             console.error('Failed to fetch question:', error);
+            // Optionally set error state here if UI supports it
         } finally {
             setLoading(false);
         }
@@ -45,10 +50,17 @@ export function QuestionDetailPage() {
     const fetchAnswers = async () => {
         try {
             const response = await fetch(`${API_URL}/api/questions/${id}/answers`);
-            const data = await response.json();
-            setAnswers(data);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setAnswers(data);
+                } else {
+                    setAnswers([]);
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch answers:', error);
+            setAnswers([]);
         }
     };
 

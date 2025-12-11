@@ -111,7 +111,11 @@ export function ProfilePage() {
             const response = await fetch(`${API_URL}/api/activity/user/${userId}`);
             if (response.ok) {
                 const data = await response.json();
-                setActivities(data);
+                if (Array.isArray(data)) {
+                    setActivities(data);
+                } else {
+                    setActivities([]);
+                }
             }
         } catch (error) {
             console.error('Error fetching user activity:', error);
@@ -123,7 +127,11 @@ export function ProfilePage() {
             const response = await fetch(`${API_URL}/api/questions/user/${userId}`);
             if (response.ok) {
                 const data = await response.json();
-                setQuestions(data);
+                if (Array.isArray(data)) {
+                    setQuestions(data);
+                } else {
+                    setQuestions([]);
+                }
             }
         } catch (error) {
             console.error('Error fetching user questions:', error);
