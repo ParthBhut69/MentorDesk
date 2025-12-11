@@ -66,7 +66,7 @@ const registerUser = async (req, res) => {
                 name: sanitizedName,
                 email: sanitizedEmail,
                 password: hashedPassword,
-            });
+            }).returning('id'); // Required for Postgres
 
             const newUser = await trx('users').where({ id }).first();
             return newUser;
@@ -217,7 +217,7 @@ const googleAuth = async (req, res) => {
                     oauth_provider: 'google',
                     avatar_url: picture || null,
                     password: await bcrypt.hash(sanitizedGoogleId + Date.now(), 10), // Random password
-                });
+                }).returning('id'); // Required for Postgres
 
                 existingUser = await trx('users').where({ id }).first();
                 console.log('[GoogleAuth] New user created with ID:', id);

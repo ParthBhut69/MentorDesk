@@ -78,10 +78,19 @@ app.use('/api/rewards', rewardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/followers', followerRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/activity', activityRoutes);
-app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/badges', badgeRoutes);
+app.use('/api/categories', require('./routes/categoryRoutes'));
+
+// Explicit 404 handler for API routes
+app.use('/api/*', (req, res) => {
+    console.error(`[API 404] Route not found: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({
+        message: 'API route not found',
+        path: req.originalUrl,
+        method: req.method
+    });
+});
 
 // Serve static files from the React app
 const path = require('path');
@@ -91,9 +100,10 @@ const fs = require('fs');
 const distPath = path.join(__dirname, '../dist');
 const indexPath = path.join(distPath, 'index.html');
 
-// Check if dist folder exists and log
+console.log(`[Static] Checking dist path: ${distPath}`);
+
 if (fs.existsSync(distPath)) {
-    console.log(`[Static Files] Serving from: ${distPath}`);
+    console.log(`[Static] Dist folder found. Serving static files.`);
     app.use(express.static(distPath));
 
     // The "catchall" handler: for any request that doesn't
@@ -102,44 +112,25 @@ if (fs.existsSync(distPath)) {
         if (fs.existsSync(indexPath)) {
             res.sendFile(indexPath);
         } else {
-            console.error('[Static Files] index.html not found');
-            res.status(404).json({
-                message: 'Frontend not built',
-                hint: 'Run: npm run build in the project root',
-                development: process.env.NODE_ENV === 'development' ?
-                    'In development, run the frontend separately with: npm run dev' : undefined
-            });
+            console.error('[Static] index.html not found at:', indexPath);
+            res.status(500).send('Frontend build is missing index.html');
         }
     });
 } else {
-    console.warn(`[Static Files] Warning: dist folder not found at ${distPath}`);
-
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[Static Files] Running in DEVELOPMENT mode');
-        console.log('[Static Files] Start frontend separately: cd .. && npm run dev');
-        console.log('[Static Files] API routes will work at http://localhost:3000/api/*');
-    } else {
-        console.warn('[Static Files] Running in PRODUCTION without build - this is an error!');
-    }
-
-    // Fallback route for development - just show a helpful message
+    console.error(`[Static] Dist folder NOT found at: ${distPath}`);
     app.get('*', (req, res) => {
         res.status(503).json({
-            message: 'Frontend not available',
-            environment: process.env.NODE_ENV || 'unknown',
-            apiStatus: 'API is running',
-            hint: process.env.NODE_ENV === 'development' ?
-                'Start frontend separately with: npm run dev' :
-                'Build frontend with: npm run build'
+            message: 'Frontend not available (dist folder missing)',
+            path: distPath,
+            env: process.env.NODE_ENV
         });
     });
 }
 
-
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
+    res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
 const PORT = process.env.PORT || 3000;
