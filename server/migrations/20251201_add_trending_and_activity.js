@@ -21,10 +21,7 @@ exports.up = function (knex) {
 
             // Indexes for performance
             table.index('topic_id');
-            table.index(['trending_score'], 'trending_score_idx', {
-                indexType: 'BTREE',
-                storageEngineIndexType: 'btree'
-            });
+            table.index(['trending_score'], 'trending_score_idx');
             table.index('calculated_at');
         })
         // Create topic_activity_logs table for tracking all user interactions
