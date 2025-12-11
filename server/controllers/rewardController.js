@@ -78,10 +78,9 @@ const awardPoints = async (userId, actionType, pointsAwarded, relatedId = null, 
             user_id: userId,
             action_type: actionType,
             points_awarded: pointsAwarded,
-            related_id: relatedId
-        });
-
-        // Check and award any new badges (pass trx if supported by badgeController, otherwise might need refactor there too)
+            related_id: relatedId,
+            description: actionType.replace('_', ' ')
+        }).returning('id'); // Check and award any new badges (pass trx if supported by badgeController, otherwise might need refactor there too)
         // For now, we'll assume badgeController handles its own logic or we might skip it in transaction for now if it's complex
         // Ideally, badgeController should also accept trx.
         // Let's check if checkAndAwardBadges supports trx. If not, we might have a minor inconsistency if badges fail but points succeed.

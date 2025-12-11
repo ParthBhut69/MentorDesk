@@ -78,7 +78,7 @@ const createCategory = async (req, res) => {
             slug,
             description,
             image_url
-        });
+        }).returning('id');
 
         const newCategory = await db('categories').where('id', id).first();
         res.status(201).json(newCategory);

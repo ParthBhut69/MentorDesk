@@ -41,7 +41,7 @@ const checkAndAwardBadges = async (userId) => {
                 await db('user_badges').insert({
                     user_id: userId,
                     badge_id: badge.id
-                });
+                }).returning('id');
                 newBadges.push(badge);
             }
         }

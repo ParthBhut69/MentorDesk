@@ -30,7 +30,7 @@ const followUser = async (req, res) => {
             follower_id,
             followed_id,
             followed_type: type
-        });
+        }).returning('id');
 
         // Increment follower count if it's a user
         if (type === 'user') {

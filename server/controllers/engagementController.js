@@ -108,9 +108,9 @@ const addComment = async (req, res) => {
 
         const [id] = await db('comments').insert({
             answer_id,
-            user_id,
+            user_id: req.user.id,
             comment_text
-        });
+        }).returning('id');
 
         const comment = await db('comments')
             .where('comments.id', id)

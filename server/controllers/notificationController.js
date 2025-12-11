@@ -11,7 +11,7 @@ const createNotification = async (userId, type, content, relatedId = null, relat
             related_id: relatedId,
             related_type: relatedType,
             read_status: false
-        });
+        }).returning('id');
     } catch (error) {
         console.error('Error creating notification:', error);
     }
