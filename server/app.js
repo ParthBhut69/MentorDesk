@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const { initializeCronJobs } = require('./jobs/cronJobs');
 
 const authRoutes = require('./routes/authRoutes');
@@ -55,6 +56,25 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
+// Rate Limiting
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests from this IP, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 15, // Limit each IP to 5 login/register requests per hour
+    message: { message: 'Too many login attempts, please try again later.' }
+});
+
+// Apply global limiter to all routes
+app.use('/api', globalLimiter);
+
+
 // Test endpoint to verify CORS
 app.get('/api/test', (req, res) => {
     res.json({
@@ -68,6 +88,7 @@ app.get('/api/test', (req, res) => {
 
 
 // Routes
+app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/answers', answerRoutes);
