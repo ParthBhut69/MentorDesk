@@ -26,7 +26,7 @@ const createAnswer = async (req, res) => {
                 question_id,
                 user_id: req.user.id,
                 answer_text,
-            });
+            }).returning('id');
 
             const answer = await trx('answers').where({ id }).first();
 

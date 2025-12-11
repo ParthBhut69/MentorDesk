@@ -18,7 +18,7 @@ const createQuestion = async (req, res) => {
                 title,
                 description,
                 image_url: req.body.image || null
-            });
+            }).returning('id');
 
             // Extract tags from title and description
             const extractTags = (text) => {
@@ -35,7 +35,7 @@ const createQuestion = async (req, res) => {
             for (const tagName of uniqueTags) {
                 let tag = await trx('tags').where({ name: tagName }).first();
                 if (!tag) {
-                    const [tagId] = await trx('tags').insert({ name: tagName });
+                    const [tagId] = await trx('tags').insert({ name: tagName }).returning('id');
                     tag = { id: tagId };
                 }
                 await trx('question_tags').insert({
