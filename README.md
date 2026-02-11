@@ -1,0 +1,82 @@
+# MentorDesk 🚀
+
+A professional Q&A platform for mentorship, built with React (Vite) and Node.js (Express/Knex).
+**Status:** Production Ready ✅
+
+## 🌟 Features
+- **Q&A Engine**: Ask questions, post answers, and tag topics.
+- **Authentication**: JWT-based auth with Google OAuth support.
+- **Gamification**: Badges, XP, and Leaderboards.
+- **Performance**: Lazy loading, Code splitting, and Optimised assets.
+- **Security**: Rate limiting, Helmet headers, and Input sanitization.
+- **Database**: PostgreSQL (Production) / SQLite (Dev) compatible.
+
+## 🛠️ Quickstart
+
+### Prerequisites
+- Node.js v16+
+- Git
+
+### 1. Clone & Install
+```bash
+git clone <your-repo-url>
+cd MentorDesk
+
+# Install Frontend
+npm install
+
+# Install Backend
+cd server
+npm install
+```
+
+### 2. Environment Setup
+Create `.env` in `client/` (root) and `server/`:
+
+**Root (`.env`)**:
+```env
+VITE_API_URL=http://localhost:3000
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+**Server (`server/.env`)**:
+```env
+PORT=3000
+JWT_SECRET=your-super-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+# For Production (Render)
+DATABASE_URL=postgres://user:pass@host/dbname
+```
+
+### 3. Run Locally
+```bash
+# Terminal 1 (Backend)
+cd server
+npm run migrate
+npm run dev
+
+# Terminal 2 (Frontend)
+npm run dev
+```
+Visit `http://localhost:5173`
+
+## 🚀 Deployment
+This project is optimized for **Render.com**.
+
+1.  Push to GitHub.
+2.  Create a **Web Service** on Render.
+3.  Set Build Command: `cd server && npm install && npm run migrate && cd .. && npm install && npm run build`
+4.  Set Start Command: `cd server && npm start`
+5.  Add Environment Variables (see `deployment_guide.md` for details).
+
+## 📄 Documentation
+- [Deployment Guide](./TESTING_GUIDE.md)
+- [QA Report](./qa_report.md) (Local artifact)
+- [Google OAuth Setup](./google_oauth_guide.md) (Local artifact)
+
+## 🐛 Changelog (v1.0.0 Fixes)
+- Fixed "Unexpected end of JSON" on Register (Postgres `returning` clause).
+- Fixed 404 API errors (Route handling).
+- Fixed Google Login (Schema & Logic).
+- Added Rate Limiting & Security Headers.
+- Optimized Frontend Bundle size.

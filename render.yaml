@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: mentordesk
+    env: node
+    buildCommand: |
+      # Install root dependencies and build frontend
+      npm install
+      npm run build
+      # Install server dependencies
+      cd server
+      npm install
+      # Run database migrations
+      NODE_ENV=production npx knex migrate:latest
+    startCommand: cd server && NODE_ENV=production npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mentordesk-db
+          property: connectionString
+
+databases:
+  - name: mentordesk-db
+    databaseName: mentordesk
+    user: mentordesk
+    plan: free
+
