@@ -2,7 +2,10 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useState } from 'react';
+<<<<<<< HEAD
 import { safeLocalStorageSet } from '../../lib/storage';
+=======
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
 export function GoogleLoginButton({ text = 'signin_with' }: { text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin' }) {
     const navigate = useNavigate();
@@ -13,11 +16,14 @@ export function GoogleLoginButton({ text = 'signin_with' }: { text?: 'signin_wit
         setError('');
         setLoading(true);
 
+<<<<<<< HEAD
         // Enhanced logging for debugging
         console.log('[GoogleAuth] Authentication initiated');
         console.log('[GoogleAuth] Credential received:', credentialResponse.credential ? 'Yes' : 'No');
         console.log('[GoogleAuth] API URL:', API_URL);
 
+=======
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         try {
             const response = await fetch(`${API_URL}/api/auth/google`, {
                 method: 'POST',
@@ -29,6 +35,7 @@ export function GoogleLoginButton({ text = 'signin_with' }: { text?: 'signin_wit
                 }),
             });
 
+<<<<<<< HEAD
             console.log('[GoogleAuth] Server response status:', response.status);
 
             const data = await response.json();
@@ -66,12 +73,32 @@ export function GoogleLoginButton({ text = 'signin_with' }: { text?: 'signin_wit
                 setError('Unable to connect to server. Please check your internet connection and ensure the backend is running.');
             } else {
                 setError(`Authentication error: ${err.message || 'An unexpected error occurred'}. Please try again.`);
+=======
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data));
+                navigate('/');
+            } else {
+                // Show specific server error message
+                setError(data.message || 'Google login failed. Please try again.');
+            }
+        } catch (err: any) {
+            console.error('Google login error:', err);
+
+            if (err.name === 'TypeError' && err.message.includes('fetch')) {
+                setError('Unable to connect to server. Please check your internet connection.');
+            } else {
+                setError('An unexpected error occurred with Google login. Please try again.');
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             }
         } finally {
             setLoading(false);
         }
     };
 
+<<<<<<< HEAD
     const handleError = () => {
         console.error('[GoogleAuth] Google Login popup failed or was closed');
         setError('Google Login Failed. Please try again or check your popup blocker settings.');
@@ -93,6 +120,16 @@ export function GoogleLoginButton({ text = 'signin_with' }: { text?: 'signin_wit
                 <GoogleLogin
                     onSuccess={handleSuccess}
                     onError={handleError}
+=======
+    return (
+        <div className="w-full">
+            {error && <div className="mb-4 text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</div>}
+            {loading && <div className="mb-4 text-center text-sm text-slate-600">Signing in with Google...</div>}
+            <div className="flex justify-center">
+                <GoogleLogin
+                    onSuccess={handleSuccess}
+                    onError={() => setError('Google Login Failed')}
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                     useOneTap
                     text={text}
                 // width prop removed as "100%" is invalid. 

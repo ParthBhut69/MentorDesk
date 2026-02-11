@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import { toast } from 'react-hot-toast';
+=======
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 import { MainLayout } from '../layouts/MainLayout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -94,6 +97,7 @@ export function AskQuestionPage() {
             const data = await response.json();
 
             if (response.ok) {
+<<<<<<< HEAD
                 toast.success('Question posted successfully!');
                 navigate('/');
             } else {
@@ -104,6 +108,14 @@ export function AskQuestionPage() {
         } catch (err) {
             setError('Something went wrong. Please try again.');
             toast.error('Network error. Please try again.');
+=======
+                navigate('/');
+            } else {
+                setError(data.message || 'Failed to post question');
+            }
+        } catch (err) {
+            setError('Something went wrong. Please try again.');
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         } finally {
             setIsSubmitting(false);
         }

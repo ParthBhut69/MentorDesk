@@ -53,6 +53,7 @@ export function HomePage() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+<<<<<<< HEAD
 
             // Handle both array response and object response with questions property
             const questionsArray = Array.isArray(data)
@@ -62,6 +63,14 @@ export function HomePage() {
                     : [];
 
             setQuestions(questionsArray);
+=======
+            if (Array.isArray(data)) {
+                setQuestions(data);
+            } else {
+                console.error('Data is not an array:', data);
+                setQuestions([]);
+            }
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         } catch (error) {
             console.error('Failed to fetch questions:', error);
             setQuestions([]);

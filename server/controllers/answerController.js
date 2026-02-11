@@ -22,15 +22,22 @@ const createAnswer = async (req, res) => {
                 throw new Error('Question not found');
             }
 
+<<<<<<< HEAD
             const [inserted] = await trx('answers').insert({
+=======
+            const [id] = await trx('answers').insert({
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                 question_id,
                 user_id: req.user.id,
                 answer_text,
             }).returning('id');
 
+<<<<<<< HEAD
             // Handle SQLite/Knex return format (Object vs Primitive)
             const id = (inserted && typeof inserted === 'object' && inserted.id) ? inserted.id : inserted;
 
+=======
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             const answer = await trx('answers').where({ id }).first();
 
             // Award points for posting answer
@@ -51,6 +58,7 @@ const createAnswer = async (req, res) => {
         });
 
         // Perform non-critical side effects AFTER transaction commits
+<<<<<<< HEAD
         try {
             if (result.answer && result.answer.id) {
                 await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: result.answer.id });
@@ -68,6 +76,14 @@ const createAnswer = async (req, res) => {
             console.error('Notification error:', notificationError);
             // Don't fail the request if notification fails
         }
+=======
+        await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: result.answer.id });
+
+        // Create notification for question author using enhanced service
+        const author = await db('users').where({ id: req.user.id }).first();
+        const question = await db('questions').where({ id: question_id }).first();
+        await notifyAnswerPosted(result.answer, question, author);
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
         res.status(201).json({
             ...result.answer,
@@ -78,10 +94,14 @@ const createAnswer = async (req, res) => {
         if (error.message === 'Question not found') {
             return res.status(404).json({ message: 'Question not found' });
         }
+<<<<<<< HEAD
         res.status(500).json({
             message: 'Server Error',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
+=======
+        res.status(500).json({ message: 'Server Error' });
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     }
 };
 

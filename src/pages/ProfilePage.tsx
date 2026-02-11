@@ -11,7 +11,10 @@ import { EditQuestionModal } from '../components/modals/EditQuestionModal';
 import { FollowButton } from '../components/common/FollowButton';
 import { ExpertBadge } from '../components/common/ExpertBadge';
 import { API_URL } from '../config/api';
+<<<<<<< HEAD
 import { safeLocalStorageSet } from '../lib/storage';
+=======
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
 interface ProfileData {
     name: string;
@@ -190,6 +193,7 @@ export function ProfilePage() {
                 setEditedUser(updatedUser);
                 setIsEditing(false);
 
+<<<<<<< HEAD
                 // Update localStorage safely
                 const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -202,6 +206,12 @@ export function ProfilePage() {
 
                 const mergedUser = { ...currentUser, ...userToSave };
                 safeLocalStorageSet('user', mergedUser);
+=======
+                // Update localStorage
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const mergedUser = { ...currentUser, ...updatedUser };
+                localStorage.setItem('user', JSON.stringify(mergedUser));
+>>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             } else {
                 const errorData = await response.json();
                 setError(errorData.message || 'Failed to update profile');
