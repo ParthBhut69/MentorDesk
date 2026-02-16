@@ -73,12 +73,14 @@ const createQuestion = async (req, res) => {
 
         // Handle specific database errors
         if (error.code === 'SQLITE_CONSTRAINT') {
-            return res.status(400).json({ message: 'Invalid question data' });
+            return res.status(400).json({ message: 'Invalid question data', error: error.message });
         }
 
+        // TEMPORARY: Return error message in production for debugging
         res.status(500).json({
             message: 'Failed to create question. Please try again.',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: error.message,
+            stack: error.stack // Optional: include stack trace if needed
         });
     }
 };
