@@ -57,6 +57,7 @@ app.use(helmet({
             "connect-src": ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
         },
     },
+    crossOriginOpenerPolicy: false, // Required for Google Sign-In popup
 }));
 app.use(morgan('dev'));
 
