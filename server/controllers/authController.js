@@ -24,29 +24,20 @@ const registerUser = async (req, res) => {
     // Validate name
     const nameValidation = validateName(name);
     if (!nameValidation.valid) {
-<<<<<<< HEAD
         console.log(`Registration failed: Invalid name '${name}' - ${nameValidation.message}`);
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         return res.status(400).json({ message: nameValidation.message });
     }
 
     // Validate email format
     if (!isValidEmail(email)) {
-<<<<<<< HEAD
         console.log(`Registration failed: Invalid email '${email}'`);
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         return res.status(400).json({ message: 'Invalid email format' });
     }
 
     // Validate password strength
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
-<<<<<<< HEAD
         console.log(`Registration failed: Weak password - ${passwordValidation.message}`);
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         return res.status(400).json({ message: passwordValidation.message });
     }
 
@@ -74,22 +65,15 @@ const registerUser = async (req, res) => {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             // Create user
-<<<<<<< HEAD
             const [inserted] = await trx('users').insert({
-=======
-            const [id] = await trx('users').insert({
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                 name: sanitizedName,
                 email: sanitizedEmail,
                 password: hashedPassword,
             }).returning('id'); // Required for Postgres
 
-<<<<<<< HEAD
             // Handle SQLite/Knex return format (Object vs Primitive)
             const id = (inserted && typeof inserted === 'object' && inserted.id) ? inserted.id : inserted;
 
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             const newUser = await trx('users').where({ id }).first();
             return newUser;
         });
@@ -171,7 +155,6 @@ const loginUser = async (req, res) => {
 // @access  Public
 const googleAuth = async (req, res) => {
     const { credential } = req.body;
-<<<<<<< HEAD
     const timestamp = new Date().toISOString();
 
     console.log(`[${timestamp}] [GoogleAuth] Request received`);
@@ -191,37 +174,19 @@ const googleAuth = async (req, res) => {
 
     console.log(`[${timestamp}] [GoogleAuth] GOOGLE_CLIENT_ID configured: ${process.env.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
 
-=======
-
-    if (!credential) {
-        return res.status(400).json({ message: 'Google credential required' });
-    }
-
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     try {
         // Verify Google token server-side
         const { OAuth2Client } = require('google-auth-library');
         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-<<<<<<< HEAD
         let payload;
         try {
             console.log(`[${timestamp}] [GoogleAuth] Verifying ID token...`);
-=======
-        if (!process.env.GOOGLE_CLIENT_ID) {
-            console.error('GOOGLE_CLIENT_ID not configured');
-            return res.status(500).json({ message: 'Google OAuth not configured properly' });
-        }
-
-        let payload;
-        try {
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             const ticket = await client.verifyIdToken({
                 idToken: credential,
                 audience: process.env.GOOGLE_CLIENT_ID,
             });
             payload = ticket.getPayload();
-<<<<<<< HEAD
             console.log(`[${timestamp}] [GoogleAuth] Token verified successfully for email: ${payload.email}`);
         } catch (verifyError) {
             console.error(`[${timestamp}] [GoogleAuth] Token verification FAILED:`, {
@@ -230,32 +195,19 @@ const googleAuth = async (req, res) => {
             });
             return res.status(400).json({
                 message: 'Invalid or expired Google token. Please try signing in again.'
-=======
-        } catch (verifyError) {
-            console.error('Google token verification failed:', verifyError.message);
-            return res.status(400).json({
-                message: 'Invalid or expired Google token. Please try again.'
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             });
         }
 
         const { sub: googleId, email, name, picture } = payload;
 
         if (!email || !googleId) {
-<<<<<<< HEAD
             console.error(`[${timestamp}] [GoogleAuth] ERROR: Missing email or googleId from payload`);
-=======
-            console.error('Missing email or googleId from Google payload');
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             return res.status(400).json({ message: 'Invalid Google account data' });
         }
 
         // Validate email format
         if (!isValidEmail(email)) {
-<<<<<<< HEAD
             console.error(`[${timestamp}] [GoogleAuth] ERROR: Invalid email format: ${email}`);
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             return res.status(400).json({ message: 'Invalid email format from Google' });
         }
 
@@ -264,11 +216,7 @@ const googleAuth = async (req, res) => {
         const sanitizedName = sanitizeInput(name || email.split('@')[0]);
         const sanitizedGoogleId = sanitizeInput(googleId, 255);
 
-<<<<<<< HEAD
         console.log(`[${timestamp}] [GoogleAuth] Processing user: ${sanitizedEmail}`);
-
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         // Use transaction to prevent race conditions
         const user = await db.transaction(async (trx) => {
             // Try to find existing user by email OR google_id
@@ -282,15 +230,9 @@ const googleAuth = async (req, res) => {
 
             if (!existingUser) {
                 // Create new user with Google auth - ATOMIC OPERATION
-<<<<<<< HEAD
                 console.log(`[${timestamp}] [GoogleAuth] Creating new user for: ${sanitizedEmail}`);
 
                 const [inserted] = await trx('users').insert({
-=======
-                console.log('[GoogleAuth] Creating new user for:', sanitizedEmail);
-
-                const [id] = await trx('users').insert({
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                     name: sanitizedName,
                     email: sanitizedEmail,
                     google_id: sanitizedGoogleId,
@@ -299,7 +241,6 @@ const googleAuth = async (req, res) => {
                     password: await bcrypt.hash(sanitizedGoogleId + Date.now(), 10), // Random password
                 }).returning('id'); // Required for Postgres
 
-<<<<<<< HEAD
                 // Handle SQLite/Knex return format (Object vs Primitive)
                 const id = (inserted && typeof inserted === 'object' && inserted.id) ? inserted.id : inserted;
 
@@ -312,13 +253,6 @@ const googleAuth = async (req, res) => {
             } else {
                 // User exists (active or soft-deleted)
                 console.log(`[${timestamp}] [GoogleAuth] Existing user found: ${existingUser.id}`);
-
-=======
-                existingUser = await trx('users').where({ id }).first();
-                console.log('[GoogleAuth] New user created with ID:', id);
-            } else {
-                // User exists (active or soft-deleted)
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                 const updateData = {
                     google_id: sanitizedGoogleId,
                     oauth_provider: existingUser.oauth_provider || 'google',
@@ -328,11 +262,7 @@ const googleAuth = async (req, res) => {
 
                 // If user was soft-deleted, RESTORE them
                 if (existingUser.deleted_at) {
-<<<<<<< HEAD
                     console.log(`[${timestamp}] [GoogleAuth] Restoring soft-deleted user: ${existingUser.id}`);
-=======
-                    console.log('[GoogleAuth] Restoring soft-deleted user:', existingUser.id);
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                     updateData.deleted_at = null;
                     updateData.deleted_by = null;
                     updateData.is_active = true;
@@ -344,20 +274,13 @@ const googleAuth = async (req, res) => {
 
                 // Refresh user data after update
                 existingUser = await trx('users').where({ id: existingUser.id }).first();
-<<<<<<< HEAD
                 console.log(`[${timestamp}] [GoogleAuth] ✅ User logged in/linked successfully: ${existingUser.id}`);
-=======
-                console.log('[GoogleAuth] User logged in/linked successfully:', existingUser.id);
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             }
 
             // Check if account is active (only if we didn't just restore it)
             // If we just restored it, is_active is true. If it was manually deactivated (not deleted), we still block.
             if (existingUser.is_active === false && !existingUser.deleted_at) {
-<<<<<<< HEAD
                 console.warn(`[${timestamp}] [GoogleAuth] Account is deactivated: ${existingUser.id}`);
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                 throw new Error('Account is deactivated. Please contact support.');
             }
 
@@ -365,10 +288,7 @@ const googleAuth = async (req, res) => {
         });
 
         // Return token immediately
-<<<<<<< HEAD
         console.log(`[${timestamp}] [GoogleAuth] ✅ Authentication successful for user: ${user.id}`);
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         res.json({
             id: user.id,
             name: user.name,
@@ -378,15 +298,11 @@ const googleAuth = async (req, res) => {
             token: generateToken(user.id, user.role || 'user'),
         });
     } catch (error) {
-<<<<<<< HEAD
         console.error(`[${timestamp}] [GoogleAuth] ❌ ERROR:`, {
             message: error.message,
             code: error.code,
             stack: error.stack
         });
-=======
-        console.error('Google auth error:', error);
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
         if (error.message.includes('deactivated')) {
             return res.status(403).json({ message: error.message });
@@ -398,14 +314,9 @@ const googleAuth = async (req, res) => {
                 message: 'Account already exists. Please try logging in again.'
             });
         }
-<<<<<<< HEAD
-
         res.status(500).json({
             message: 'Server error during Google authentication. Please try again or contact support.'
         });
-=======
-        res.status(500).json({ message: 'Server Error' });
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     }
 };
 

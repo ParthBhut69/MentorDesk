@@ -50,6 +50,15 @@ async function awardPoints(userId, points, action, referenceId = null, reference
         // Also update XP (could have different rules)
         await updateUserLevel(userId, user.points, queryBuilder);
 
+        // ── Bridge to gamification service (reputation + tiers) ──
+        try {
+            const { updateReputation } = require('./gamificationService');
+            await updateReputation(userId, action, points, referenceId, referenceType, trx);
+        } catch (gamErr) {
+            // Don't fail the original award if gamification service errors
+            console.error('[PointsService] Gamification bridge error:', gamErr.message);
+        }
+
         return user;
     } catch (error) {
         console.error('Error awarding points:', error);

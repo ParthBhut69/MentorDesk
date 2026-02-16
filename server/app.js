@@ -19,6 +19,7 @@ const followerRoutes = require('./routes/followerRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const badgeRoutes = require('./routes/badgeRoutes');
+const gamificationRoutes = require('./routes/gamificationRoutes');
 
 const app = express();
 
@@ -59,24 +60,15 @@ app.use(morgan('dev'));
 // Rate Limiting
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-<<<<<<< HEAD
     max: 1000, // Increased for development
-=======
-    max: 100, // Limit each IP to 100 requests per windowMs
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests from this IP, please try again later.' }
 });
 
 const authLimiter = rateLimit({
-<<<<<<< HEAD
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Increased for development
-=======
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 15, // Limit each IP to 5 login/register requests per hour
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     message: { message: 'Too many login attempts, please try again later.' }
 });
 
@@ -110,13 +102,11 @@ app.use('/api/search', searchRoutes);
 app.use('/api/followers', followerRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/badges', badgeRoutes);
-<<<<<<< HEAD
 app.use('/api/users', userRoutes);
 const likeRoutes = require('./routes/likeRoutes');
 app.use('/api/answers', likeRoutes); // Mount like routes for answers
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/gamification', gamificationRoutes);
 
 // Explicit 404 handler for API routes
 app.use('/api/*', (req, res) => {

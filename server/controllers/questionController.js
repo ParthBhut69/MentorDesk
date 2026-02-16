@@ -1,9 +1,5 @@
 const db = require('../db/db');
-<<<<<<< HEAD
 const { awardPoints, POINT_VALUES } = require('../services/pointsService');
-=======
-const { awardPoints, REWARDS } = require('./rewardController');
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
 // @desc    Create a question
 // @route   POST /api/questions
@@ -48,7 +44,6 @@ const createQuestion = async (req, res) => {
                 });
             }
 
-<<<<<<< HEAD
             // Award points for posting question (using new points service)
             await awardPoints(
                 req.user.id,
@@ -85,19 +80,6 @@ const createQuestion = async (req, res) => {
             message: 'Failed to create question. Please try again.',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
-=======
-            // Award points for posting question
-            await awardPoints(req.user.id, 'question_posted', REWARDS.QUESTION_POSTED, id, trx);
-
-            const question = await trx('questions').where({ id }).first();
-            return question;
-        });
-
-        res.status(201).json(result);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     }
 };
 
@@ -130,18 +112,12 @@ const getAllQuestions = async (req, res) => {
             // Trending logic is handled in trendingController, but simple sort here
             query = query
                 .orderBy('questions.views', 'desc')
-<<<<<<< HEAD
                 .orderByRaw('(COALESCE(questions.upvotes, 0) * 2 - COALESCE(questions.downvotes, 0)) DESC');
         } else {
             // Default ranking: Score (Likes * 2 - Dislikes) DESC, then Newest
             query = query
                 .orderByRaw('(COALESCE(questions.upvotes, 0) * 2 - COALESCE(questions.downvotes, 0)) DESC')
                 .orderBy('questions.created_at', 'desc');
-=======
-                .orderBy('questions.upvotes', 'desc');
-        } else {
-            query = query.orderBy('questions.created_at', 'desc');
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         }
 
         if (tag) {
@@ -151,7 +127,6 @@ const getAllQuestions = async (req, res) => {
                 .where('tags.name', tag);
         }
 
-<<<<<<< HEAD
         // Execute query with proper error handling
         const questions = await query;
 
@@ -161,10 +136,6 @@ const getAllQuestions = async (req, res) => {
             total: questions.length,
             timestamp: new Date().toISOString()
         });
-=======
-        const questions = await query;
-        res.json(questions);
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });

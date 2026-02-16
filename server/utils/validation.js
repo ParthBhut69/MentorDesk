@@ -8,13 +8,8 @@
 const isValidEmail = (email) => {
     if (!email || typeof email !== 'string') return false;
 
-<<<<<<< HEAD
     // Simplified standard email regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-=======
-    // Comprehensive email regex that handles most valid formats
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
     return emailRegex.test(email) && email.length <= 254; // Max email length per RFC 5321
 };

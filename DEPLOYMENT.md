@@ -1,107 +1,86 @@
 # MentorDesk Deployment Guide
 
-## ⚠️ CRITICAL: Database Configuration
+## 🚀 Recommended Method: Render Blueprint (Easiest)
 
-**DO NOT use SQLite in production!** Render's filesystem is ephemeral, meaning:
-- SQLite database gets wiped on every deployment
-- User data will be lost
-- File restarts cause data loss
+This project includes a `render.yaml` file that automates the deployment of both the Web Service and the PostgreSQL Database.
 
-**SOLUTION: You MUST use PostgreSQL on Render**
+### Step 1: Connect to Render
+1.  Push your latest code to GitHub.
+2.  Log in to the [Render Dashboard](https://dashboard.render.com/).
+3.  Click the **"New +"** button and select **"Blueprint"**.
+4.  Connect your GitHub repository `ParthBhut69/MentorDesk`.
 
-## Deploying to Render with PostgreSQL
+### Step 2: Configure Blueprint
+1.  Give your service a name (e.g., `mentordesk`).
+2.  Render will detect the `render.yaml` file.
+3.  **Review the resources**:
+    -   `mentordesk` (Web Service)
+    -   `mentordesk-db` (PostgreSQL Database)
+4.  **Environment Variables**:
+    -   Render will prompt you for `GOOGLE_CLIENT_ID`. Enter your Google OAuth Client ID.
+    -   `JWT_SECRET` will be auto-generated.
+    -   `DATABASE_URL` will be auto-linked.
+5.  Click **"Apply"**.
 
-### Step 1: Create PostgreSQL Database First
+### Step 3: Wait for Deployment
+Render will now:
+1.  Create the database.
+2.  Build your frontend (`npm install && npm run build`).
+3.  Build your backend (`cd server && npm install`).
+4.  Run database migrations (`npx knex migrate:latest`).
+5.  Start the server.
 
-1. Go to Render Dashboard → "New +" → "PostgreSQL"
-2. Configure:
-   - **Name**: `mentordesk-db`
-   - **Database**: `mentordesk`
-   - **User**: `mentordesk`
-   - **Region**: Same as your web service
-   - **Plan**: Free (or paid for more resources)
-3. Click "Create Database"
-4. **IMPORTANT**: Wait for database to be created before proceeding
+---
+
+## 🛠️ Method 2: Manual Deployment
+
+If you prefer to set up services manually:
+
+### Step 1: Create PostgreSQL Database
+1.  Go to Render Dashboard → **"New +"** → **"PostgreSQL"**.
+2.  **Name**: `mentordesk-db`
+3.  **Database**: `mentordesk`
+4.  **User**: `mentordesk`
+5.  **Region**: Select the region closest to you (e.g., Singapore, Oregon).
+6.  **Plan**: Free.
+7.  Click **"Create Database"**.
+8.  **Copy the "Internal Database URL"** once created.
 
 ### Step 2: Create Web Service
+1.  Go to Render Dashboard → **"New +"** → **"Web Service"**.
+2.  Connect your repository.
+3.  **Settings**:
+    -   **Name**: `mentordesk`
+    -   **Runtime**: Node
+    -   **Build Command**:
+        ```bash
+        npm install && npm run build && cd server && npm install && NODE_ENV=production npx knex migrate:latest
+        ```
+    -   **Start Command**:
+        ```bash
+        cd server && NODE_ENV=production npm start
+        ```
+4.  **Environment Variables** (Add these):
+    -   `NODE_ENV`: `production`
+    -   `DATABASE_URL`: (Paste the Internal Database URL from Step 1)
+    -   `JWT_SECRET`: (Generate a secure random string)
+    -   `GOOGLE_CLIENT_ID`: (Your Google OAuth Client ID)
+    -   `PORT`: `10000`
 
-1. Go to Render Dashboard → "New +" → "Web Service"
-2. Connect your GitHub repository `ParthBhut69/MentorDesk`
-4. Configure as follows:
+### Step 3: Deploy
+Click **"Create Web Service"**.
 
-**Build Settings:**
-- **Name**: mentordesk
-- **Environment**: Node
-- **Build Command**: 
-  ```bash
-  npm install && npm run build && cd server && npm install && npx knex migrate:latest && npx knex seed:run
-  ```
-- **Start Command**: 
-  ```bash
-  cd server && npm start
-  ```
+---
 
-**Environment Variables:**
-Add these in Render dashboard:
-- `NODE_ENV` = `production`
-- `PORT` = `10000`
-- `JWT_SECRET` = (Generate a random string)
-- `GOOGLE_CLIENT_ID` = (Your Google OAuth Client ID)
-- `VITE_API_URL` = (Leave empty or set to your Render URL)
+## ✅ Post-Deployment Verification
 
-#### 2. Important Notes
+1.  **Visit your URL**: Go to `https://mentordesk.onrender.com` (or your specific URL).
+2.  **Test Registration**: Sign up a new user to verify the database connection.
+3.  **Google OAuth**:
+    -   Go to [Google Cloud Console](https://console.cloud.google.com/).
+    -   Update **Authorized JavaScript origins** to `https://<your-app>.onrender.com`.
+    -   Update **Authorized redirect URIs** to `https://<your-app>.onrender.com`.
+4.  **Logs**: Check the "Logs" tab in Render if you encounter any issues.
 
-- **Database**: Currently using SQLite which works for development but may have limitations on Render
-  - For production, consider upgrading to PostgreSQL
-  - SQLite file will be stored in the service filesystem
-
-- **Static Files**: Backend serves the built React app from `/dist` directory
-
-- **API Calls**: Frontend makes same-origin requests (no CORS needed) since both are served from same domain
-
-- **Client-Side Routing**: The catch-all route in `app.js` handles React Router paths
-
-#### 3. Post-Deployment
-
-1. **Test the Application**:
-   - Visit your Render URL
-   - Try logging in with seeded users:
-     - `admin@mentordesk.com` / `password123`
-     - `expert@mentordesk.com` / `password123`
-     - `user@mentordesk.com` / `password123`
-
-2. **Configure Google OAuth**:
-   - Add your Render URL to Google Cloud Console OAuth settings
-   - Authorized JavaScript origins: `https://your-app-name.onrender.com`
-   - Authorized redirect URIs: `https://your-app-name.onrender.com`
-
-#### 4. Upgrading to PostgreSQL (Recommended for Production)
-
-If you want to use PostgreSQL on Render:
-
-1. Create a PostgreSQL database in Render
-2. Update `render.yaml` to include database configuration
-3. Update `server/knexfile.js` to use PostgreSQL in production
-4. Redeploy
-
-### Troubleshooting
-
-**Issue: User data disappears after deployment or restart**
-- **Cause**: Using SQLite in production (Render's filesystem is ephemeral)
-- **Solution**: 
-  1. Create a PostgreSQL database in Render
-  2. Update `DATABASE_URL` environment variable 
-  3. Redeploy (migrations will run automatically)
-  4. **Note**: Existing SQLite data will be lost. This is expected.
-
-**Issue**: "Cannot GET /"
-- **Solution**: Make sure build completed successfully and `/dist` folder exists
-
-**Issue**: API calls failing
-- **Solution**: Check that VITE_API_URL is either empty or set to your Render URL
-
-**Issue**: Routes not working
-- **Solution**: Verify the catch-all route in `server/app.js` is configured
-
-**Issue**: Database not persisting
-- **Solution**: SQLite file may be reset on redeploys. Upgrade to PostgreSQL for persistence.
+## ⚠️ Important Note on Free Tier
+Render's **Free Tier** services spin down after 15 minutes of inactivity. The first request after a spin-down may take up to 30-50 seconds. This is normal behavior for the free plan.

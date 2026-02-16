@@ -64,12 +64,9 @@ const awardPoints = async (userId, actionType, pointsAwarded, relatedId = null, 
 
         // Get updated points AFTER increment
         const user = await queryBuilder('users').where('id', userId).first();
-<<<<<<< HEAD
         if (!user) {
             throw new Error(`User ${userId} not found after point increment`);
         }
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
         // Update rank based on new points
         const newRank = calculateRank(user.points);
@@ -85,22 +82,12 @@ const awardPoints = async (userId, actionType, pointsAwarded, relatedId = null, 
             action_type: actionType,
             points_awarded: pointsAwarded,
             related_id: relatedId,
-<<<<<<< HEAD
             created_at: new Date(),
             updated_at: new Date()
         }).returning('id');
 
         // Check and award any new badges
         const newBadges = await checkAndAwardBadges(userId, trx);
-=======
-            description: actionType.replace('_', ' ')
-        }).returning('id'); // Check and award any new badges (pass trx if supported by badgeController, otherwise might need refactor there too)
-        // For now, we'll assume badgeController handles its own logic or we might skip it in transaction for now if it's complex
-        // Ideally, badgeController should also accept trx.
-        // Let's check if checkAndAwardBadges supports trx. If not, we might have a minor inconsistency if badges fail but points succeed.
-        // But points are the critical part here.
-        const newBadges = await checkAndAwardBadges(userId);
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
         return {
             points: user.points,  // This is now the UPDATED value

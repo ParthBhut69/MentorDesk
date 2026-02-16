@@ -3,6 +3,8 @@ const { awardPoints, REWARDS } = require('./rewardController');
 const { createNotification } = require('./notificationController');
 const { notifyAnswerPosted, notifyAnswerLiked, notifyAnswerAccepted } = require('../services/notificationService');
 const { logActivityForQuestionTopics } = require('../services/activityLogger');
+const { updateReputation, REPUTATION_ACTIONS } = require('../services/gamificationService');
+const { updateFounderScore, FOUNDER_ACTIONS } = require('../services/gamificationService');
 
 // @desc    Create an answer
 // @route   POST /api/questions/:id/answers
@@ -22,22 +24,15 @@ const createAnswer = async (req, res) => {
                 throw new Error('Question not found');
             }
 
-<<<<<<< HEAD
             const [inserted] = await trx('answers').insert({
-=======
-            const [id] = await trx('answers').insert({
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                 question_id,
                 user_id: req.user.id,
                 answer_text,
             }).returning('id');
 
-<<<<<<< HEAD
             // Handle SQLite/Knex return format (Object vs Primitive)
             const id = (inserted && typeof inserted === 'object' && inserted.id) ? inserted.id : inserted;
 
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             const answer = await trx('answers').where({ id }).first();
 
             // Award points for posting answer
@@ -49,16 +44,43 @@ const createAnswer = async (req, res) => {
                 trx
             );
 
-            // Log reply activity for all question topics
-            // Note: logActivityForQuestionTopics might need update to support trx, but it's less critical if it fails independently.
-            // For now, we keep it outside or assume it handles itself.
-            // Ideally, we should pass trx to it too.
+            // ── Calculate response time and award fast-response bonus ──
+            let responseTimeMinutes = null;
+            try {
+                const questionCreated = new Date(question.created_at);
+                const now = new Date();
+                responseTimeMinutes = Math.round((now - questionCreated) / (1000 * 60));
 
-            return { answer, rewardResult };
+                // Update user's response speed average
+                const user = await trx('users').where('id', req.user.id)
+                    .select('response_speed_avg').first();
+                const currentAvg = user?.response_speed_avg || 0;
+                const newAvg = currentAvg > 0
+                    ? Math.round((currentAvg + responseTimeMinutes) / 2)
+                    : responseTimeMinutes;
+
+                await trx('users').where('id', req.user.id)
+                    .update({ response_speed_avg: newAvg });
+
+                // Award fast-response bonus if < 60 minutes
+                if (responseTimeMinutes < 60) {
+                    await updateReputation(
+                        req.user.id,
+                        'fast_response',
+                        REPUTATION_ACTIONS.FAST_RESPONSE,
+                        id,
+                        'answer',
+                        trx
+                    );
+                }
+            } catch (speedErr) {
+                console.error('[Answer] Response speed calc error:', speedErr.message);
+            }
+
+            return { answer, rewardResult, responseTimeMinutes };
         });
 
         // Perform non-critical side effects AFTER transaction commits
-<<<<<<< HEAD
         try {
             if (result.answer && result.answer.id) {
                 await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: result.answer.id });
@@ -76,32 +98,21 @@ const createAnswer = async (req, res) => {
             console.error('Notification error:', notificationError);
             // Don't fail the request if notification fails
         }
-=======
-        await logActivityForQuestionTopics(question_id, req.user.id, 'reply', { answerId: result.answer.id });
-
-        // Create notification for question author using enhanced service
-        const author = await db('users').where({ id: req.user.id }).first();
-        const question = await db('questions').where({ id: question_id }).first();
-        await notifyAnswerPosted(result.answer, question, author);
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 
         res.status(201).json({
             ...result.answer,
-            reward: result.rewardResult
+            reward: result.rewardResult,
+            responseTimeMinutes: result.responseTimeMinutes
         });
     } catch (error) {
         console.error(error);
         if (error.message === 'Question not found') {
             return res.status(404).json({ message: 'Question not found' });
         }
-<<<<<<< HEAD
         res.status(500).json({
             message: 'Server Error',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
-=======
-        res.status(500).json({ message: 'Server Error' });
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
     }
 };
 
@@ -262,6 +273,13 @@ const acceptAnswer = async (req, res) => {
 
         // Award points for accepted answer
         await awardPoints(answer.user_id, 'answer_accepted', REWARDS.ANSWER_ACCEPTED, answerId);
+
+        // ── Award founder score to question author ──
+        try {
+            await updateFounderScore(question.user_id, 'accept_answer', FOUNDER_ACTIONS.ACCEPT_ANSWER);
+        } catch (founderErr) {
+            console.error('[Answer] Founder score error:', founderErr.message);
+        }
 
         // Notify answer author
         await notifyAnswerAccepted(answer, question);

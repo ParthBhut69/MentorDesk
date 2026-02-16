@@ -1,12 +1,25 @@
 const db = require('../db/db');
 const { awardPoints, REWARDS } = require('./rewardController');
 const { createNotification } = require('./notificationController');
+const { validateVote } = require('../services/antiGamingService');
 
 // Upvote or downvote a question or answer
 const vote = async (req, res) => {
     try {
         const { votable_type, votable_id, vote_type } = req.body;
         const user_id = req.user.id;
+
+        // ── Anti-gaming: validate vote before processing ──
+        if (vote_type === 'upvote') {
+            const table = votable_type === 'question' ? 'questions' : 'answers';
+            const content = await db(table).where('id', votable_id).first();
+            if (content) {
+                const validation = await validateVote(user_id, content.user_id, votable_type);
+                if (!validation.allowed) {
+                    return res.status(429).json({ message: validation.reason });
+                }
+            }
+        }
 
         // Check if user already voted
         const existingVote = await db('votes')

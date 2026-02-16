@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
 import { toast } from 'react-hot-toast';
-=======
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -39,7 +36,6 @@ export function RegisterPage() {
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data));
-<<<<<<< HEAD
                 toast.success('Registration successful!');
                 navigate('/');
             } else {
@@ -47,18 +43,11 @@ export function RegisterPage() {
                 const errorMsg = data.message || 'Registration failed. Please try again.';
                 setError(errorMsg);
                 toast.error(errorMsg);
-=======
-                navigate('/');
-            } else {
-                // Show specific server error message
-                setError(data.message || 'Registration failed. Please try again.');
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             }
         } catch (err: any) {
             // Handle network errors specifically
             console.error('Registration error:', err);
 
-<<<<<<< HEAD
             let errorMsg = 'An unexpected error occurred. Please try again later.';
             if (err.name === 'TypeError' && err.message.includes('fetch')) {
                 errorMsg = 'Unable to connect to server. Please check your internet connection.';
@@ -67,15 +56,6 @@ export function RegisterPage() {
             }
             setError(errorMsg);
             toast.error(errorMsg);
-=======
-            if (err.name === 'TypeError' && err.message.includes('fetch')) {
-                setError('Unable to connect to server. Please check your internet connection.');
-            } else if (err.message.includes('timeout')) {
-                setError('Request timed out. Please try again.');
-            } else {
-                setError('An unexpected error occurred. Please try again later.');
-            }
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
         } finally {
             setLoading(false);
         }

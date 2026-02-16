@@ -1,7 +1,6 @@
 const db = require('../db/db');
 
 // Check and award badges for a user
-<<<<<<< HEAD
 const checkAndAwardBadges = async (userId, trx = null) => {
     try {
         const queryBuilder = trx || db;
@@ -22,36 +21,14 @@ const checkAndAwardBadges = async (userId, trx = null) => {
             questions: parseInt(questionsCount?.count || 0),
             answers: parseInt(answersCount?.count || 0),
             accepted_answers: parseInt(acceptedAnswersCount?.count || 0),
-=======
-const checkAndAwardBadges = async (userId) => {
-    try {
-        // Get user stats
-        const user = await db('users').where('id', userId).first();
-        const questionsCount = await db('questions').where('user_id', userId).count('id as count').first();
-        const answersCount = await db('answers').where('user_id', userId).count('id as count').first();
-        const acceptedAnswersCount = await db('answers').where({ user_id: userId, is_accepted: true }).count('id as count').first();
-
-        const stats = {
-            points: user.points || 0,
-            questions: parseInt(questionsCount.count || 0),
-            answers: parseInt(answersCount.count || 0),
-            accepted_answers: parseInt(acceptedAnswersCount.count || 0),
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             followers: user.follower_count || 0
         };
 
         // Get all badges
-<<<<<<< HEAD
         const allBadges = await queryBuilder('badges').select('*');
 
         // Get already earned badges
         const earnedBadgeIds = await queryBuilder('user_badges')
-=======
-        const allBadges = await db('badges').select('*');
-
-        // Get already earned badges
-        const earnedBadgeIds = await db('user_badges')
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
             .where('user_id', userId)
             .pluck('badge_id');
 
@@ -68,11 +45,7 @@ const checkAndAwardBadges = async (userId) => {
             const userValue = stats[badge.requirement_type];
             if (userValue >= badge.requirement_value) {
                 // Award badge
-<<<<<<< HEAD
                 await queryBuilder('user_badges').insert({
-=======
-                await db('user_badges').insert({
->>>>>>> 33adee00930a83695ade63f74cc84e6502792cbb
                     user_id: userId,
                     badge_id: badge.id
                 }).returning('id');
