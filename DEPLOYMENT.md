@@ -53,16 +53,14 @@ If you prefer to set up services manually:
     -   **Name**: `mentordesk`
     -   **Runtime**: Node
     -   **Build Command**:
-        ```bash
-        npm install && npm run build && cd server && npm install && NODE_ENV=production npx knex migrate:latest
-        ```
+        npm install --include=dev && npm run build && cd server && npm install && npx knex migrate:latest && npx knex seed:run
     -   **Start Command**:
         ```bash
         cd server && NODE_ENV=production npm start
         ```
 4.  **Environment Variables** (Add these):
     -   `NODE_ENV`: `production`
-    -   `DATABASE_URL`: (Paste the Internal Database URL from Step 1)
+    -   `DATABASE_URL`: 'postgresql://mentordesk:4d9d0my58HmSVUj7l00pJqfqDzxOzz61@dpg-d69l8nvgi27c73cik6c0-a/mentordesk'
     -   `JWT_SECRET`: (Generate a secure random string)
     -   `GOOGLE_CLIENT_ID`: (Your Google OAuth Client ID)
     -   `PORT`: `10000`
