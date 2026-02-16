@@ -13,12 +13,15 @@ const createQuestion = async (req, res) => {
 
     try {
         const result = await db.transaction(async (trx) => {
-            const [id] = await trx('questions').insert({
+            const [inserted] = await trx('questions').insert({
                 user_id: req.user.id,
                 title,
                 description,
                 image_url: req.body.image || null
             }).returning('id');
+
+            // Handle Postgres return format (Object vs Primitive)
+            const id = (inserted && typeof inserted === 'object' && inserted.id) ? inserted.id : inserted;
 
             // Extract tags from title and description
             const extractTags = (text) => {
@@ -35,7 +38,8 @@ const createQuestion = async (req, res) => {
             for (const tagName of uniqueTags) {
                 let tag = await trx('tags').where({ name: tagName }).first();
                 if (!tag) {
-                    const [tagId] = await trx('tags').insert({ name: tagName }).returning('id');
+                    const [insertedTag] = await trx('tags').insert({ name: tagName }).returning('id');
+                    const tagId = (insertedTag && typeof insertedTag === 'object' && insertedTag.id) ? insertedTag.id : insertedTag;
                     tag = { id: tagId };
                 }
                 await trx('question_tags').insert({

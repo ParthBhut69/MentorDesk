@@ -111,7 +111,6 @@ const likeRoutes = require('./routes/likeRoutes');
 app.use('/api/answers', likeRoutes); // Mount like routes for answers
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/gamification', gamificationRoutes);
-app.use('/api/debug', require('./routes/debugRoutes'));
 
 // Explicit 404 handler for API routes
 app.use('/api/*', (req, res) => {
