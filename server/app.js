@@ -51,7 +51,10 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-            "img-src": ["'self'", "data:", "blob:", "https:"],
+            "img-src": ["'self'", "data:", "blob:", "https:", "lh3.googleusercontent.com"],
+            "script-src": ["'self'", "https://accounts.google.com", "https://apis.google.com"],
+            "frame-src": ["'self'", "https://accounts.google.com"],
+            "connect-src": ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
         },
     },
 }));
