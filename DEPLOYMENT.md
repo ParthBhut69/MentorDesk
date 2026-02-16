@@ -17,7 +17,7 @@ This project includes a `render.yaml` file that automates the deployment of both
     -   `mentordesk` (Web Service)
     -   `mentordesk-db` (PostgreSQL Database)
 4.  **Environment Variables**:
-    -   Render will prompt you for `GOOGLE_CLIENT_ID`. Enter your Google OAuth Client ID.
+    -   Render will prompt you for `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID`. Enter your Google OAuth Client ID for both.
     -   `JWT_SECRET` will be auto-generated.
     -   `DATABASE_URL` will be auto-linked.
 5.  Click **"Apply"**.
@@ -62,7 +62,8 @@ If you prefer to set up services manually:
     -   `NODE_ENV`: `production`
     -   `DATABASE_URL`: 'postgresql://mentordesk:4d9d0my58HmSVUj7l00pJqfqDzxOzz61@dpg-d69l8nvgi27c73cik6c0-a/mentordesk'
     -   `JWT_SECRET`: (Generate a secure random string)
-    -   `GOOGLE_CLIENT_ID`: (Your Google OAuth Client ID)
+    -   `GOOGLE_CLIENT_ID`: 775076359358-86jqrmiqdljhm3q83jpei7vbroi5sfa6.apps.googleusercontent.com
+    -   `VITE_GOOGLE_CLIENT_ID`: 775076359358-86jqrmiqdljhm3q83jpei7vbroi5sfa6.apps.googleusercontent.com
     -   `PORT`: `10000`
 
 ### Step 3: Deploy
