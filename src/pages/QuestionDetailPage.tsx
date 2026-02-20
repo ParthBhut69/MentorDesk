@@ -163,13 +163,7 @@ export function QuestionDetailPage() {
                 <div className="flex-1 min-w-0 space-y-6">
                     {/* Question Section */}
                     <Card className="border-slate-200">
-                        <CardHeader className="flex flex-row items-start gap-4 pb-2">
-                            <VoteButton
-                                votableType="question"
-                                votableId={question.id}
-                                initialUpvotes={question.upvotes || 0}
-                            />
-
+                        <CardHeader className="pb-2">
                             <div className="flex-1">
                                 <div className="flex justify-between items-start">
                                     <h1 className="text-2xl font-bold text-slate-900 mb-2">{question.title}</h1>
@@ -212,7 +206,12 @@ export function QuestionDetailPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-4 pt-4 border-t border-slate-100 mt-6">
+                                    <VoteButton
+                                        votableType="question"
+                                        votableId={question.id}
+                                        initialUpvotes={question.upvotes || 0}
+                                    />
                                     <BookmarkButton questionId={question.id} />
                                     <ShareButton
                                         questionId={question.id}

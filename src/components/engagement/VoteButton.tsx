@@ -63,24 +63,37 @@ export function VoteButton({ votableType, votableId, initialUpvotes, userVote: i
     };
 
     return (
-        <div className="flex items-center gap-2">
-            <Button
-                variant={userVote === 'upvote' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleVote('upvote')}
-                disabled={loading}
-                className={userVote === 'upvote' ? 'bg-primary-600' : ''}
-            >
-                <ThumbsUp className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-semibold text-slate-700">{upvotes}</span>
+        <div className="flex items-center gap-1">
+            <div className="flex items-center">
+                <Button
+                    variant={userVote === 'upvote' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleVote('upvote');
+                    }}
+                    disabled={loading}
+                    className={`h-8 px-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 gap-1.5 rounded-full transition-colors ${userVote === 'upvote' ? 'bg-primary-50 text-primary-600' : ''}`}
+                >
+                    <ThumbsUp className={`h-4 w-4 ${userVote === 'upvote' ? 'fill-current' : ''}`} />
+                    <span className="text-xs font-medium">{upvotes}</span>
+                    <span className="text-xs font-medium hidden sm:inline">Upvote</span>
+                </Button>
+            </div>
             <Button
                 variant={userVote === 'downvote' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => handleVote('downvote')}
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleVote('downvote');
+                }}
                 disabled={loading}
+                className={`h-8 px-2 text-slate-500 hover:text-red-600 hover:bg-red-50 gap-1.5 rounded-full transition-colors ${userVote === 'downvote' ? 'bg-red-50 text-red-600' : ''}`}
             >
-                <ThumbsDown className="h-4 w-4" />
+                <ThumbsDown className={`h-4 w-4 ${userVote === 'downvote' ? 'fill-current' : ''}`} />
+                <span className="text-xs font-medium hidden sm:inline">Downvote</span>
             </Button>
         </div>
     );

@@ -1,10 +1,11 @@
-import { MessageSquare, ThumbsUp, Share2, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, Share2, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { BookmarkButton } from '../engagement/BookmarkButton';
+import { VoteButton } from '../engagement/VoteButton';
 import type { Question } from '../../types';
 
 interface QuestionCardProps {
@@ -71,28 +72,25 @@ export function QuestionCard({ question }: QuestionCardProps) {
                     </div>
                 </CardContent>
 
-                <CardFooter className="px-5 py-3 border-t border-slate-100 bg-slate-50/30 flex justify-between items-center">
-                    <div className="flex gap-4">
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 gap-1.5 rounded-full transition-colors">
-                            <ThumbsUp className="h-4 w-4" />
-                            <span className="text-xs font-medium">{question.upvotes}</span>
-                            <span className="sr-only">Upvotes</span>
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 gap-1.5 rounded-full transition-colors">
-                            <MessageSquare className="h-4 w-4" />
-                            <span className="text-xs font-medium">{question.answersCount}</span>
-                            <span className="sr-only">Answers</span>
-                        </Button>
+                <CardFooter className="px-5 py-3 border-t border-slate-100 bg-slate-50/30 flex flex-wrap items-center gap-4">
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <VoteButton
+                            votableType="question"
+                            votableId={parseInt(question.id)}
+                            initialUpvotes={question.upvotes}
+                        />
                     </div>
-                    <div className="flex gap-2">
-                        <div onClick={(e) => e.stopPropagation()}>
-                            <BookmarkButton questionId={parseInt(question.id)} />
-                        </div>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-slate-500 hover:text-slate-900 gap-1.5 rounded-full">
-                            <Share2 className="h-4 w-4" />
-                            <span className="text-xs font-medium">Share</span>
-                        </Button>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 gap-1.5 rounded-full transition-colors">
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-xs font-medium">{question.answersCount}</span>
+                    </Button>
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <BookmarkButton questionId={parseInt(question.id)} />
                     </div>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-slate-500 hover:text-slate-900 gap-1.5 rounded-full">
+                        <Share2 className="h-4 w-4" />
+                        <span className="text-xs font-medium hidden sm:inline">Share</span>
+                    </Button>
                 </CardFooter>
             </Card>
         </Link>
