@@ -5,8 +5,31 @@ const bcrypt = require('bcrypt');
  * @returns { Promise<void> } 
  */
 exports.seed = async function (knex) {
-    // Deletes ALL existing entries
-    await knex('users').del();
+    // Delete in dependency order to avoid FK constraint violations.
+    // Tables with FK references to users/questions/answers must be cleared first.
+    const tablesToClear = [
+        'points_history',
+        'badges_awarded',
+        'leaderboard',
+        'notifications',
+        'answer_likes',
+        'question_likes',
+        'votes',
+        'bookmarks',
+        'comments',
+        'question_tags',
+        'answers',
+        'questions',
+        'users',
+    ];
+
+    for (const table of tablesToClear) {
+        const exists = await knex.schema.hasTable(table);
+        if (exists) {
+            await knex(table).del();
+        }
+    }
+
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash('password123', salt);
