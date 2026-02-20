@@ -7,7 +7,9 @@
         "start": "node app.js",
         "dev": "nodemon app.js",
         "migrate": "knex migrate:latest",
-        "seed": "knex seed:run"
+        "migrate:prod": "node scripts/migrate.js",
+        "seed": "knex seed:run",
+        "seed:dev": "NODE_ENV=development knex seed:run"
     },
     "dependencies": {
         "bcrypt": "^5.1.1",

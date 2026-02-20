@@ -11,6 +11,11 @@ module.exports = {
             filename: './dev.sqlite3'
         },
         useNullAsDefault: true,
+        migrations: {
+            directory: './migrations'
+        },
+        // Seeds are ONLY configured for local development.
+        // Never run knex seed:run in production.
         seeds: {
             directory: './seeds'
         }
@@ -29,8 +34,11 @@ module.exports = {
             max: 10
         },
         migrations: {
-            tableName: 'knex_migrations'
+            tableName: 'knex_migrations',
+            directory: './migrations'
         }
+        // NOTE: No seeds config in production.
+        // Seeding in production would DELETE all user data.
     }
 
 };

@@ -5,6 +5,14 @@ const bcrypt = require('bcrypt');
  * @returns { Promise<void> } 
  */
 exports.seed = async function (knex) {
+    // ⚠️  PRODUCTION SAFETY GUARD
+    // Seeds are ONLY for local development to set up a fresh database.
+    // Running this in production would wipe ALL user data. Never do it.
+    if (process.env.NODE_ENV === 'production') {
+        console.warn('[SEED] Skipped — seed:run is disabled in production to protect user data.');
+        return;
+    }
+
     // Delete in dependency order to avoid FK constraint violations.
     // Tables with FK references to users/questions/answers must be cleared first.
     const tablesToClear = [

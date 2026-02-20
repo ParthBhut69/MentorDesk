@@ -9,7 +9,7 @@ services:
       # Install server dependencies
       cd server
       npm install
-      # Run database migrations
+      # Run ONLY safe incremental migrations — NEVER seed (seeding deletes all data)
       NODE_ENV=production npx knex migrate:latest
     startCommand: cd server && NODE_ENV=production npm start
     envVars:
