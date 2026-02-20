@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from '../../layouts/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Mail, User, Clock, CheckCircle, ChevronDown, ChevronUp, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { Mail, User, Clock, CheckCircle, ChevronDown, ChevronUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { API_URL } from '../../config/api';
 
 interface ContactMessage {

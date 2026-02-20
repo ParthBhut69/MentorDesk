@@ -17,6 +17,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then(module => ({ d
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 const UserManagement = lazy(() => import('./pages/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 const UserDetails = lazy(() => import('./pages/admin/UserDetails').then(module => ({ default: module.UserDetails })));
+const MessagesDashboard = lazy(() => import('./pages/admin/MessagesDashboard').then(module => ({ default: module.MessagesDashboard })));
 const SearchPage = lazy(() => import('./pages/SearchPage').then(module => ({ default: module.SearchPage })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(module => ({ default: module.NotificationsPage })));
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage').then(module => ({ default: module.CategoriesPage })));
@@ -52,6 +53,7 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
+          <Route path="/admin/messages" element={<MessagesDashboard />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFoundPage />} />
